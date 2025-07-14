@@ -4,7 +4,6 @@
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
 ![Version](https://img.shields.io/badge/Version-1.0-brightgreen?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
 ## 🌟 주요 기능
 
