@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadStats() {
   try {
-    const result = await chrome.storage.local.get(['nmapScraperData']);
-    const data = result.nmapScraperData || {};
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const data = result.mapScraperData || {};
     
     const listCount = Object.keys(data).length;
     const placeCount = Object.values(data).reduce((total, list) => {
@@ -98,8 +98,8 @@ function setupExportModalEventListeners() {
 // ==================== JSON 내보내기 ====================
 async function exportDataAsJSON() {
   try {
-    const result = await chrome.storage.local.get(['nmapScraperData']);
-    const data = result.nmapScraperData || {};
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const data = result.mapScraperData || {};
     
     if (Object.keys(data).length === 0) {
       alert('내보낼 데이터가 없습니다.');
@@ -133,8 +133,8 @@ async function exportDataAsJSON() {
 // ==================== CSV 내보내기 ====================
 async function exportDataAsCSV() {
   try {
-    const result = await chrome.storage.local.get(['nmapScraperData']);
-    const data = result.nmapScraperData || {};
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const data = result.mapScraperData || {};
     
     if (Object.keys(data).length === 0) {
       alert('내보낼 데이터가 없습니다.');
@@ -273,8 +273,8 @@ async function handleFileImport(event) {
 
 async function mergeImportedData(importedLists) {
   try {
-    const result = await chrome.storage.local.get(['nmapScraperData']);
-    const existingData = result.nmapScraperData || {};
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const existingData = result.mapScraperData || {};
     
     // 중복 리스트명 처리
     Object.entries(importedLists).forEach(([importedId, importedList]) => {
@@ -295,7 +295,7 @@ async function mergeImportedData(importedLists) {
       };
     });
     
-    await chrome.storage.local.set({ nmapScraperData: existingData });
+    await chrome.storage.local.set({ mapScraperData: existingData });
   } catch (error) {
     console.error('데이터 병합 실패:', error);
     throw error;
@@ -304,7 +304,7 @@ async function mergeImportedData(importedLists) {
 
 async function replaceAllData(importedLists) {
   try {
-    await chrome.storage.local.set({ nmapScraperData: importedLists });
+    await chrome.storage.local.set({ mapScraperData: importedLists });
   } catch (error) {
     console.error('데이터 교체 실패:', error);
     throw error;
@@ -320,7 +320,7 @@ async function clearAllData() {
   try {
     // chrome.storage.local.clear() 대신 빈 객체로 명시적 업데이트
     // 이렇게 해야 storage change 이벤트가 확실히 발생함
-    await chrome.storage.local.set({ nmapScraperData: {} });
+    await chrome.storage.local.set({ mapScraperData: {} });
     
     document.getElementById('list-count').textContent = '0';
     document.getElementById('place-count').textContent = '0';
@@ -359,7 +359,7 @@ function showMessage(message) {
 }
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'local' && changes.nmapScraperData) {
+  if (namespace === 'local' && changes.mapScraperData) {
     loadStats();
   }
 });

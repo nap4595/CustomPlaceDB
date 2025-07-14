@@ -1,6 +1,6 @@
 
 /* 사이드바 메인 컨테이너 */
-#nmap-scraper-sidebar {
+#map-scraper-sidebar {
   position: fixed;
   bottom: 0;
   right: 120px;
@@ -21,21 +21,21 @@
   flex-direction: column;
 }
 
-#nmap-scraper-sidebar.open {
+#map-scraper-sidebar.open {
   transform: translateY(0);
 }
 
-#nmap-scraper-sidebar.visible {
+#map-scraper-sidebar.visible {
   transform: translateY(0);
 }
 
-#nmap-scraper-sidebar:not(.visible) {
+#map-scraper-sidebar:not(.visible) {
   transform: translateY(calc(100% - 28px)); /* 헤더만 보이도록 */
 }
 
 
 /* 사이드바 헤더 */
-.nmap-sidebar-header {
+.map-sidebar-header {
   padding: 4px 15px;
   background-color: #03c75a;
   color: white;
@@ -49,7 +49,7 @@
 }
 
 /* 드래그 핸들 */
-.nmap-drag-handle {
+.map-drag-handle {
   flex: 1;
   height: 100%;
   cursor: grab;
@@ -59,7 +59,7 @@
   position: relative;
 }
 
-.nmap-drag-handle::before {
+.map-drag-handle::before {
   content: '';
   width: 30px;
   height: 3px;
@@ -69,11 +69,11 @@
   transition: all 0.3s ease-out;
 }
 
-.nmap-drag-handle:active {
+.map-drag-handle:active {
   cursor: grabbing;
 }
 
-.nmap-toggle-visibility-btn {
+.map-toggle-visibility-btn {
   background: none;
   border: none;
   color: white;
@@ -88,20 +88,20 @@
   transition: all 0.2s ease-out;
 }
 
-.nmap-toggle-visibility-btn:hover {
+.map-toggle-visibility-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* 숨김 상태에서 토글 버튼 다시 보이기 (제거) */
 
 /* 숨김 상태에서 사이드바 폭 줄이기 */
-#nmap-scraper-sidebar:not(.visible) {
+#map-scraper-sidebar:not(.visible) {
   width: 120px;
   right: 180px; /* 120px + 60px 여백 = 180px */
 }
 
 /* 축소 시 더 빠른 애니메이션 */
-#nmap-scraper-sidebar.collapsing {
+#map-scraper-sidebar.collapsing {
   transition: 
     transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
     width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
@@ -109,32 +109,32 @@
 }
 
 /* 숨김 상태에서 헤더 스타일 조정 */
-#nmap-scraper-sidebar:not(.visible) .nmap-sidebar-header {
+#map-scraper-sidebar:not(.visible) .map-sidebar-header {
   padding: 4px 8px;
   border-radius: 8px 8px 0 0;
   justify-content: space-between;
 }
 
 /* 숨김 상태에서 드래그 핸들 스타일 */
-#nmap-scraper-sidebar:not(.visible) .nmap-drag-handle::before {
+#map-scraper-sidebar:not(.visible) .map-drag-handle::before {
   width: 30px;
   height: 3px;
   border-radius: 1.5px;
 }
 
 /* 목록 관리 영역 */
-.nmap-list-manager {
+.map-list-manager {
   padding: 15px 20px;
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
 }
 
 /* 목록 표시 영역 */
-.nmap-list-display {
+.map-list-display {
   margin-bottom: 10px;
 }
 
-.nmap-list-select {
+.map-list-select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #ddd;
@@ -147,21 +147,21 @@
   cursor: pointer;
 }
 
-.nmap-list-select:focus {
+.map-list-select:focus {
   outline: none;
   border-color: #03c75a;
   box-shadow: 0 0 0 2px rgba(3, 199, 90, 0.2);
 }
 
 /* 목록 액션 버튼 영역 */
-.nmap-list-actions {
+.map-list-actions {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin-bottom: 10px;
 }
 
-.nmap-list-btn {
+.map-list-btn {
   padding: 8px 6px;
   border: 1px solid #03c75a;
   background-color: white;
@@ -176,12 +176,12 @@
   min-width: 0;
 }
 
-.nmap-list-btn:hover {
+.map-list-btn:hover {
   background-color: #03c75a;
   color: white;
 }
 
-.nmap-add-current-btn {
+.map-add-current-btn {
   width: 100%;
   padding: 12px;
   background-color: #03c75a;
@@ -196,38 +196,38 @@
   pointer-events: auto;
 }
 
-.nmap-add-current-btn:hover {
+.map-add-current-btn:hover {
   background-color: #02b351;
 }
 
-.nmap-add-current-btn:disabled {
+.map-add-current-btn:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
 
-.nmap-add-current-btn:active {
+.map-add-current-btn:active {
   transform: scale(0.98);
 }
 
 /* 장소 목록 영역 */
-.nmap-places-container {
+.map-places-container {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
 }
 
-.nmap-empty-state {
+.map-empty-state {
   text-align: center;
   color: #666;
   padding: 40px 20px;
 }
 
-.nmap-empty-state p {
+.map-empty-state p {
   margin: 0;
   font-size: 14px;
 }
 
-.nmap-place-card {
+.map-place-card {
   background-color: #f9f9f9;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -236,18 +236,18 @@
   position: relative;
 }
 
-.nmap-place-card:hover {
+.map-place-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.nmap-place-header {
+.map-place-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 8px;
 }
 
-.nmap-place-name {
+.map-place-name {
   font-size: 16px;
   font-weight: bold;
   color: #03c75a;
@@ -257,28 +257,28 @@
   transition: color 0.2s;
 }
 
-.nmap-place-name:hover {
+.map-place-name:hover {
   color: #02b351;
   text-decoration: underline;
 }
 
-.nmap-place-category {
+.map-place-category {
   font-size: 12px;
   color: #666;
   margin: 2px 0;
 }
 
-.nmap-place-rating {
+.map-place-rating {
   font-size: 14px;
   color: #ff6b35;
   margin: 2px 0;
 }
 
-.nmap-place-rating::before {
+.map-place-rating::before {
   content: "⭐ ";
 }
 
-.nmap-delete-btn {
+.map-delete-btn {
   background: none;
   border: none;
   color: #999;
@@ -288,16 +288,16 @@
   border-radius: 4px;
 }
 
-.nmap-delete-btn:hover {
+.map-delete-btn:hover {
   background-color: #f0f0f0;
   color: #e74c3c;
 }
 
-.nmap-memo-container {
+.map-memo-container {
   margin-top: 10px;
 }
 
-.nmap-memo-textarea {
+.map-memo-textarea {
   width: 100%;
   min-height: 60px;
   padding: 8px;
@@ -309,13 +309,13 @@
   box-sizing: border-box;
 }
 
-.nmap-memo-textarea:focus {
+.map-memo-textarea:focus {
   outline: none;
   border-color: #03c75a;
 }
 
 /* 커스텀 필드 스타일 */
-.nmap-custom-fields {
+.map-custom-fields {
   margin: 10px 0;
   padding: 10px;
   background-color: #f5f5f5;
@@ -323,15 +323,15 @@
   border: 1px solid #e0e0e0;
 }
 
-.nmap-custom-field {
+.map-custom-field {
   margin-bottom: 8px;
 }
 
-.nmap-custom-field:last-child {
+.map-custom-field:last-child {
   margin-bottom: 0;
 }
 
-.nmap-custom-label {
+.map-custom-label {
   display: block;
   font-size: 11px;
   font-weight: bold;
@@ -339,8 +339,8 @@
   margin-bottom: 4px;
 }
 
-.nmap-custom-input,
-.nmap-custom-select {
+.map-custom-input,
+.map-custom-select {
   width: 100%;
   padding: 6px 8px;
   border: 1px solid #ccc;
@@ -350,14 +350,14 @@
   box-sizing: border-box;
 }
 
-.nmap-custom-input:focus,
-.nmap-custom-select:focus {
+.map-custom-input:focus,
+.map-custom-select:focus {
   outline: none;
   border-color: #03c75a;
 }
 
 /* 모달 스타일 */
-.nmap-modal {
+.map-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -370,7 +370,7 @@
   justify-content: center;
 }
 
-.nmap-modal-content {
+.map-modal-content {
   background-color: white;
   border-radius: 8px;
   width: 90%;
@@ -380,7 +380,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.nmap-modal-header {
+.map-modal-header {
   padding: 20px;
   background-color: #03c75a;
   color: white;
@@ -389,12 +389,12 @@
   align-items: center;
 }
 
-.nmap-modal-header h3 {
+.map-modal-header h3 {
   margin: 0;
   font-size: 16px;
 }
 
-.nmap-modal-close {
+.map-modal-close {
   background: none;
   border: none;
   color: white;
@@ -404,21 +404,21 @@
   border-radius: 4px;
 }
 
-.nmap-modal-close:hover {
+.map-modal-close:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-.nmap-modal-body {
+.map-modal-body {
   padding: 20px;
   max-height: 60vh;
   overflow-y: auto;
 }
 
-.nmap-fields-list {
+.map-fields-list {
   margin-bottom: 20px;
 }
 
-.nmap-field-item {
+.map-field-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -429,11 +429,11 @@
   background-color: #f9f9f9;
 }
 
-.nmap-field-info {
+.map-field-info {
   flex: 1;
 }
 
-.nmap-field-name {
+.map-field-name {
   font-weight: bold;
   font-size: 14px;
   color: #333;
@@ -441,7 +441,7 @@
   margin-bottom: 4px;
 }
 
-.nmap-field-type {
+.map-field-type {
   font-size: 12px;
   color: #666;
   background-color: #e0e0e0;
@@ -450,12 +450,12 @@
   margin-right: 8px;
 }
 
-.nmap-field-options {
+.map-field-options {
   font-size: 11px;
   color: #888;
 }
 
-.nmap-delete-field-btn {
+.map-delete-field-btn {
   background-color: #e74c3c;
   color: white;
   border: none;
@@ -465,11 +465,11 @@
   font-size: 12px;
 }
 
-.nmap-delete-field-btn:hover {
+.map-delete-field-btn:hover {
   background-color: #c0392b;
 }
 
-.nmap-add-field-btn {
+.map-add-field-btn {
   width: 100%;
   padding: 12px;
   background-color: #03c75a;
@@ -481,11 +481,11 @@
   cursor: pointer;
 }
 
-.nmap-add-field-btn:hover {
+.map-add-field-btn:hover {
   background-color: #02b351;
 }
 
-.nmap-no-fields {
+.map-no-fields {
   text-align: center;
   color: #666;
   font-style: italic;
@@ -494,45 +494,45 @@
 }
 
 @media (max-width: 768px) {
-  #nmap-scraper-sidebar {
+  #map-scraper-sidebar {
     width: 100%;
   }
   
-  #nmap-scraper-toggle {
+  #map-scraper-toggle {
     right: 20px;
     border-radius: 50%;
     padding: 12px;
     writing-mode: initial;
   }
   
-  .nmap-modal-content {
+  .map-modal-content {
     width: 95%;
     margin: 0 auto;
   }
   
-  .nmap-field-item {
+  .map-field-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
   
-  .nmap-delete-field-btn {
+  .map-delete-field-btn {
     align-self: flex-end;
   }
   
-  .nmap-list-actions {
+  .map-list-actions {
     grid-template-columns: 1fr;
     gap: 6px;
   }
   
-  .nmap-list-btn {
+  .map-list-btn {
     font-size: 11px;
     padding: 6px 10px;
   }
 }
 
 /* 입력 모달 스타일 */
-.nmap-input-field {
+.map-input-field {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
@@ -542,20 +542,20 @@
   box-sizing: border-box;
 }
 
-.nmap-input-field:focus {
+.map-input-field:focus {
   outline: none;
   border-color: #03c75a;
   box-shadow: 0 0 0 2px rgba(3, 199, 90, 0.2);
 }
 
-.nmap-modal-buttons {
+.map-modal-buttons {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   margin-top: 15px;
 }
 
-.nmap-btn {
+.map-btn {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -565,20 +565,62 @@
   transition: background-color 0.2s;
 }
 
-.nmap-btn-primary {
+.map-btn-primary {
   background-color: #03c75a;
   color: white;
 }
 
-.nmap-btn-primary:hover {
+.map-btn-primary:hover {
   background-color: #02b351;
 }
 
-.nmap-btn-secondary {
+.map-btn-secondary {
   background-color: #e0e0e0;
   color: #333;
 }
 
-.nmap-btn-secondary:hover {
+.map-btn-secondary:hover {
   background-color: #d0d0d0;
+}
+
+/* 플랫폼 뱃지 스타일 */
+.map-place-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.map-platform-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  min-width: 0;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+/* 플랫폼별 색상은 JavaScript에서 동적으로 설정됨 */
+.map-place-card[data-platform="naver"] .map-platform-badge {
+  background-color: #03c75a;
+}
+
+.map-place-card[data-platform="kakao"] .map-platform-badge {
+  background-color: #ffcd00;
+  color: #333;
+  text-shadow: none;
+}
+
+.map-place-card[data-platform="google"] .map-platform-badge {
+  background-color: #4285f4;
+}
+
+/* 플랫폼 뱃지에 호버 효과 */
+.map-platform-badge:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
 }

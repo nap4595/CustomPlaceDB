@@ -1,5 +1,185 @@
-// 네이버 지도 장소 스크랩 Content Script
-class NaverMapScraper {
+// 지도 장소 스크랩 Content Script
+
+// 플랫폼 감지 클래스
+class PlatformDetector {
+  static detectCurrentPlatform() {
+    const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
+    
+    if (hostname.includes('naver.com') && (pathname.includes('/map') || hostname.includes('map.naver.com'))) {
+      return 'naver';
+    } else if (hostname.includes('kakao.com') && pathname.includes('/map')) {
+      return 'kakao';
+    } else if (hostname.includes('google.com') && pathname.includes('/maps')) {
+      return 'google';
+    }
+    
+    return 'unknown';
+  }
+  
+  static getSupportedPlatforms() {
+    return ['naver', 'kakao', 'google'];
+  }
+  
+  static getPlatformDisplayName(platform) {
+    const displayNames = {
+      'naver': '네이버지도',
+      'kakao': '카카오맵',
+      'google': '구글지도'
+    };
+    return displayNames[platform] || platform;
+  }
+  
+  static getPlatformColor(platform) {
+    const colors = {
+      'naver': '#03c75a',
+      'kakao': '#ffcd00',
+      'google': '#4285f4'
+    };
+    return colors[platform] || '#666666';
+  }
+}
+
+// 기본 지도 데이터 추출기 클래스
+class BaseMapExtractor {
+  constructor() {
+    this.platform = 'unknown';
+  }
+  
+  async extractPlaceData() {
+    throw new Error('extractPlaceData method must be implemented');
+  }
+  
+  canExtract() {
+    return false;
+  }
+  
+  getPlatform() {
+    return this.platform;
+  }
+}
+
+// 네이버지도 데이터 추출기
+class NaverMapExtractor extends BaseMapExtractor {
+  constructor() {
+    super();
+    this.platform = 'naver';
+  }
+  
+  canExtract() {
+    return PlatformDetector.detectCurrentPlatform() === 'naver' && 
+           window.location.href.match(/\/place\/(\d+)/);
+  }
+  
+  async extractPlaceData() {
+    try {
+      const placeId = this.extractPlaceIdFromURL();
+      if (!placeId) return null;
+
+      const placeInfo = await this.fetchPlaceInfo(placeId);
+      if (!placeInfo) return null;
+
+      return {
+        id: placeId,
+        name: placeInfo.name,
+        platform: this.platform,
+        category: placeInfo.category,
+        rating: placeInfo.rating,
+        url: window.location.href,
+        customValues: {},
+        memo: ''
+      };
+    } catch (error) {
+      console.error('네이버지도 데이터 추출 실패:', error);
+      return null;
+    }
+  }
+  
+  extractPlaceIdFromURL() {
+    const urlMatch = window.location.href.match(/\/place\/(\d+)/);
+    return urlMatch ? urlMatch[1] : null;
+  }
+  
+  async fetchPlaceInfo(placeId) {
+    try {
+      const apiUrl = `https://pcmap.place.naver.com/place/${placeId}`;
+      const response = await chrome.runtime.sendMessage({
+        action: 'fetchPlaceInfo',
+        url: apiUrl
+      });
+
+      if (response && response.success) {
+        return this.parseHtmlForPlaceInfo(response.data);
+      }
+      return null;
+    } catch (error) {
+      console.error('네이버지도 API 요청 실패:', error);
+      return null;
+    }
+  }
+  
+  parseHtmlForPlaceInfo(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    const nameSelectors = ['#_title .GHAhO', '.GHAhO', '.LylZZ .GHAhO'];
+    const categorySelectors = ['#_title .lnJFt', '.lnJFt', '.LylZZ .lnJFt'];
+    
+    const name = this.extractTextFromSelectors(doc, nameSelectors);
+    const category = this.extractTextFromSelectors(doc, categorySelectors);
+    const rating = this.extractRating(doc);
+    
+    return {
+      name: name || '이름 없음',
+      category: category || '카테고리 없음',
+      rating: rating
+    };
+  }
+  
+  extractTextFromSelectors(doc, selectors) {
+    for (const selector of selectors) {
+      const element = doc.querySelector(selector);
+      if (element && element.textContent.trim()) {
+        return element.textContent.trim();
+      }
+    }
+    return null;
+  }
+  
+  extractRating(doc) {
+    const ratingElement = doc.querySelector('.PXMot.LXIwF');
+    if (ratingElement) {
+      const ratingMatch = ratingElement.textContent.match(/별점(\d+\.?\d*)/);
+      return ratingMatch ? parseFloat(ratingMatch[1]) : null;
+    }
+    return null;
+  }
+}
+
+// 추출기 팩토리 클래스
+class ExtractorFactory {
+  static getExtractor(platform = null) {
+    const targetPlatform = platform || PlatformDetector.detectCurrentPlatform();
+    
+    switch (targetPlatform) {
+      case 'naver':
+        return new NaverMapExtractor();
+      case 'kakao':
+        // TODO: 카카오맵 추출기 구현 예정
+        console.log('카카오맵 추출기는 아직 구현되지 않았습니다.');
+        return null;
+      case 'google':
+        // TODO: 구글지도 추출기 구현 예정
+        console.log('구글지도 추출기는 아직 구현되지 않았습니다.');
+        return null;
+      default:
+        console.log('지원하지 않는 플랫폼입니다:', targetPlatform);
+        return null;
+    }
+  }
+}
+
+class MapScraper {
   constructor() {
     this.sidebar = null;
     this.currentPlaceData = null;
@@ -22,9 +202,9 @@ class NaverMapScraper {
   // ==================== 데이터 관리 ====================
   async loadData() {
     try {
-      const result = await chrome.storage.local.get(['nmapScraperData']);
-      if (result.nmapScraperData) {
-        this.lists = result.nmapScraperData;
+      const result = await chrome.storage.local.get(['mapScraperData']);
+      if (result.mapScraperData) {
+        this.lists = result.mapScraperData;
       }
       // 자동 기본 목록 생성 제거
     } catch (error) {
@@ -35,7 +215,7 @@ class NaverMapScraper {
   async saveData() {
     try {
       this.isSelfUpdate = true; // 자체 업데이트 플래그 설정
-      await chrome.storage.local.set({ nmapScraperData: this.lists });
+      await chrome.storage.local.set({ mapScraperData: this.lists });
       
       // Promise를 사용한 더 안전한 플래그 해제
       await new Promise(resolve => {
@@ -59,41 +239,41 @@ class NaverMapScraper {
 
   createSidebarContainer() {
     this.sidebar = document.createElement('div');
-    this.sidebar.id = 'nmap-scraper-sidebar';
+    this.sidebar.id = 'map-scraper-sidebar';
     this.sidebar.classList.add('open'); // 초기에 열려있지만 숨김 상태로 설정
     this.sidebar.innerHTML = this.getSidebarHTML();
     document.body.appendChild(this.sidebar);
     
     // 초기 상태 설정
     setTimeout(() => {
-      const toggleBtn = document.getElementById('nmap-toggle-visibility-btn');
+      const toggleBtn = document.getElementById('map-toggle-visibility-btn');
       if (toggleBtn) toggleBtn.textContent = '⬆';
     }, 100);
   }
 
   getSidebarHTML() {
     return `
-      <div class="nmap-sidebar-header">
-        <div class="nmap-drag-handle" id="nmap-drag-handle"></div>
-        <button class="nmap-toggle-visibility-btn" id="nmap-toggle-visibility-btn">━</button>
+      <div class="map-sidebar-header">
+        <div class="map-drag-handle" id="map-drag-handle"></div>
+        <button class="map-toggle-visibility-btn" id="map-toggle-visibility-btn">━</button>
       </div>
-      <div class="nmap-list-manager">
-        <div class="nmap-list-display">
-          <select class="nmap-list-select" id="nmap-list-select">
+      <div class="map-list-manager">
+        <div class="map-list-display">
+          <select class="map-list-select" id="map-list-select">
             ${this.renderListOptions()}
           </select>
         </div>
-        <div class="nmap-list-actions">
-          <button class="nmap-list-btn" id="nmap-add-list-btn">추가</button>
-          <button class="nmap-list-btn" id="nmap-edit-list-btn">수정</button>
-          <button class="nmap-list-btn" id="nmap-delete-list-btn">삭제</button>
-          <button class="nmap-list-btn" id="nmap-manage-fields-btn">필드</button>
+        <div class="map-list-actions">
+          <button class="map-list-btn" id="map-add-list-btn">추가</button>
+          <button class="map-list-btn" id="map-edit-list-btn">수정</button>
+          <button class="map-list-btn" id="map-delete-list-btn">삭제</button>
+          <button class="map-list-btn" id="map-manage-fields-btn">필드</button>
         </div>
-        <button class="nmap-add-current-btn" id="nmap-add-current-btn">
+        <button class="map-add-current-btn" id="map-add-current-btn">
           현재 보고 있는 장소 추가
         </button>
       </div>
-      <div class="nmap-places-container" id="nmap-places-container">
+      <div class="map-places-container" id="map-places-container">
         ${this.renderPlaces()}
       </div>
       ${this.getFieldsModalHTML()}
@@ -103,34 +283,34 @@ class NaverMapScraper {
   getFieldsModalHTML() {
     return `
       <!-- 커스텀 필드 관리 모달 -->
-      <div class="nmap-modal" id="nmap-fields-modal" style="display: none;">
-        <div class="nmap-modal-content">
-          <div class="nmap-modal-header">
+      <div class="map-modal" id="map-fields-modal" style="display: none;">
+        <div class="map-modal-content">
+          <div class="map-modal-header">
             <h3>커스텀 필드 설정</h3>
-            <button class="nmap-modal-close" id="nmap-fields-modal-close">×</button>
+            <button class="map-modal-close" id="map-fields-modal-close">×</button>
           </div>
-          <div class="nmap-modal-body">
-            <div class="nmap-fields-list" id="nmap-fields-list">
+          <div class="map-modal-body">
+            <div class="map-fields-list" id="map-fields-list">
               <!-- 필드 목록이 여기에 렌더링됨 -->
             </div>
-            <button class="nmap-add-field-btn" id="nmap-add-field-btn">새 필드 추가</button>
+            <button class="map-add-field-btn" id="map-add-field-btn">새 필드 추가</button>
           </div>
         </div>
       </div>
       
       <!-- 입력 모달 -->
-      <div class="nmap-modal" id="nmap-input-modal" style="display: none;">
-        <div class="nmap-modal-content">
-          <div class="nmap-modal-header">
-            <h3 id="nmap-input-modal-title">입력</h3>
-            <button class="nmap-modal-close" id="nmap-input-modal-close">×</button>
+      <div class="map-modal" id="map-input-modal" style="display: none;">
+        <div class="map-modal-content">
+          <div class="map-modal-header">
+            <h3 id="map-input-modal-title">입력</h3>
+            <button class="map-modal-close" id="map-input-modal-close">×</button>
           </div>
-          <div class="nmap-modal-body">
-            <p id="nmap-input-modal-message"></p>
-            <input type="text" id="nmap-input-modal-input" class="nmap-input-field" />
-            <div class="nmap-modal-buttons">
-              <button class="nmap-btn nmap-btn-primary" id="nmap-input-modal-confirm">확인</button>
-              <button class="nmap-btn nmap-btn-secondary" id="nmap-input-modal-cancel">취소</button>
+          <div class="map-modal-body">
+            <p id="map-input-modal-message"></p>
+            <input type="text" id="map-input-modal-input" class="map-input-field" />
+            <div class="map-modal-buttons">
+              <button class="map-btn map-btn-primary" id="map-input-modal-confirm">확인</button>
+              <button class="map-btn map-btn-secondary" id="map-input-modal-cancel">취소</button>
             </div>
           </div>
         </div>
@@ -166,20 +346,27 @@ class NaverMapScraper {
   }
 
   renderPlaceCard(place) {
+    const platform = place.platform || 'naver'; // 기존 데이터 호환성
+    const platformColor = PlatformDetector.getPlatformColor(platform);
+    const platformName = PlatformDetector.getPlatformDisplayName(platform);
+    
     return `
-      <div class="nmap-place-card" data-place-id="${place.id}">
-        <div class="nmap-place-header">
+      <div class="map-place-card" data-place-id="${place.id}" data-platform="${platform}">
+        <div class="map-place-header">
           <div>
-            <h3 class="nmap-place-name" data-place-id="${place.id}" data-url="${place.url}">${place.name}</h3>
-            <div class="nmap-place-category">${place.category}</div>
-            ${place.rating ? `<div class="nmap-place-rating">${place.rating}</div>` : ''}
+            <div class="map-place-title-row">
+              <h3 class="map-place-name" data-place-id="${place.id}" data-url="${place.url}">${place.name}</h3>
+              <span class="map-platform-badge" style="background-color: ${platformColor}">${platformName}</span>
+            </div>
+            <div class="map-place-category">${place.category}</div>
+            ${place.rating ? `<div class="map-place-rating">${place.rating}</div>` : ''}
           </div>
-          <button class="nmap-delete-btn" data-place-id="${place.id}">×</button>
+          <button class="map-delete-btn" data-place-id="${place.id}">×</button>
         </div>
         ${this.renderCustomFields(place)}
-        <div class="nmap-memo-container">
+        <div class="map-memo-container">
           <textarea 
-            class="nmap-memo-textarea" 
+            class="map-memo-textarea" 
             placeholder="메모를 입력하세요..."
             data-place-id="${place.id}"
           >${place.memo || ''}</textarea>
@@ -190,7 +377,7 @@ class NaverMapScraper {
 
   getEmptyStateHTML() {
     return `
-      <div class="nmap-empty-state">
+      <div class="map-empty-state">
         <p>저장된 장소가 없습니다.</p>
         <p>지도에서 장소를 클릭하고 추가해보세요!</p>
       </div>
@@ -199,7 +386,7 @@ class NaverMapScraper {
 
   getNoListsStateHTML() {
     return `
-      <div class="nmap-empty-state">
+      <div class="map-empty-state">
         <p>저장된 목록이 없습니다.</p>
         <p>새 목록을 추가하거나 장소를 추가해보세요!</p>
       </div>
@@ -213,7 +400,7 @@ class NaverMapScraper {
     }
 
     return `
-      <div class="nmap-custom-fields">
+      <div class="map-custom-fields">
         ${currentList.customFields.map(field => this.renderCustomField(field, place)).join('')}
       </div>
     `;
@@ -232,8 +419,8 @@ class NaverMapScraper {
   renderSelectField(field, place, value) {
     return `
       <div class="nmap-custom-field">
-        <label class="nmap-custom-label">${field.name}</label>
-        <select class="nmap-custom-select" data-place-id="${place.id}" data-field-name="${field.name}">
+        <label class="map-custom-label">${field.name}</label>
+        <select class="map-custom-select" data-place-id="${place.id}" data-field-name="${field.name}">
           <option value="">선택하세요</option>
           ${field.options.map(option => 
             `<option value="${option}" ${value === option ? 'selected' : ''}>${option}</option>`
@@ -246,10 +433,10 @@ class NaverMapScraper {
   renderTextField(field, place, value) {
     return `
       <div class="nmap-custom-field">
-        <label class="nmap-custom-label">${field.name}</label>
+        <label class="map-custom-label">${field.name}</label>
         <input 
           type="text" 
-          class="nmap-custom-input" 
+          class="map-custom-input" 
           data-place-id="${place.id}" 
           data-field-name="${field.name}"
           value="${value}"
@@ -298,30 +485,39 @@ class NaverMapScraper {
   }
 
   setupSidebarEventListeners() {
-    this.addEventListenerSafe('#nmap-toggle-visibility-btn', 'click', () => this.toggleSidebarVisibility());
-    this.addEventListenerSafe('#nmap-drag-handle', 'mousedown', (e) => this.handleDragStart(e));
-    this.addEventListenerSafe('#nmap-list-select', 'change', (e) => this.handleListChange(e));
-    this.addEventListenerSafe('#nmap-add-list-btn', 'click', () => this.addNewList());
-    this.addEventListenerSafe('#nmap-edit-list-btn', 'click', () => this.editListName());
-    this.addEventListenerSafe('#nmap-delete-list-btn', 'click', () => this.deleteList());
-    this.addEventListenerSafe('#nmap-manage-fields-btn', 'click', () => this.showFieldsModal());
-    this.addEventListenerSafe('#nmap-add-current-btn', 'click', (e) => this.handleAddCurrentPlace(e));
+    this.addEventListenerSafe('#map-toggle-visibility-btn', 'click', () => this.toggleSidebarVisibility());
+    this.addEventListenerSafe('#map-drag-handle', 'mousedown', (e) => this.handleDragStart(e));
+    this.addEventListenerSafe('#map-list-select', 'change', (e) => this.handleListChange(e));
+    this.addEventListenerSafe('#map-add-list-btn', 'click', () => this.addNewList());
+    this.addEventListenerSafe('#map-edit-list-btn', 'click', () => this.editListName());
+    this.addEventListenerSafe('#map-delete-list-btn', 'click', () => this.deleteList());
+    this.addEventListenerSafe('#map-manage-fields-btn', 'click', () => this.showFieldsModal());
+    this.addEventListenerSafe('#map-add-current-btn', 'click', (e) => this.handleAddCurrentPlace(e));
   }
 
   setupPlacesContainerEventListeners() {
-    this.addEventListenerSafe('#nmap-places-container', 'click', (e) => this.handlePlacesContainerClick(e));
-    this.addEventListenerSafe('#nmap-places-container', 'input', (e) => this.handlePlacesContainerInput(e));
-    this.addEventListenerSafe('#nmap-places-container', 'change', (e) => this.handlePlacesContainerInput(e));
+    this.addEventListenerSafe('#map-places-container', 'click', (e) => this.handlePlacesContainerClick(e));
+    this.addEventListenerSafe('#map-places-container', 'input', (e) => this.handlePlacesContainerInput(e));
+    this.addEventListenerSafe('#map-places-container', 'change', (e) => this.handlePlacesContainerInput(e));
   }
 
   handlePlacesContainerClick(e) {
-    if (e.target.classList.contains('nmap-delete-btn')) {
+    if (e.target.classList.contains('map-delete-btn')) {
       const placeId = e.target.dataset.placeId;
       this.deletePlace(placeId);
-    } else if (e.target.classList.contains('nmap-place-name')) {
+    } else if (e.target.classList.contains('map-place-name')) {
       const url = e.target.dataset.url;
+      const placeCard = e.target.closest('.map-place-card');
+      const placePlatform = placeCard?.dataset.platform || 'naver';
+      const currentPlatform = PlatformDetector.detectCurrentPlatform();
+      
       if (url) {
-        window.location.href = url;
+        // 같은 플랫폼이면 현재 탭에서 이동, 다른 플랫폼이면 새 탭으로 열기
+        if (placePlatform === currentPlatform) {
+          window.location.href = url;
+        } else {
+          window.open(url, '_blank');
+        }
       }
     }
   }
@@ -329,10 +525,10 @@ class NaverMapScraper {
   handlePlacesContainerInput(e) {
     const placeId = e.target.dataset.placeId;
     
-    if (e.target.classList.contains('nmap-memo-textarea')) {
+    if (e.target.classList.contains('map-memo-textarea')) {
       this.saveMemo(placeId, e.target.value);
-    } else if (e.target.classList.contains('nmap-custom-input') || 
-               e.target.classList.contains('nmap-custom-select')) {
+    } else if (e.target.classList.contains('map-custom-input') || 
+               e.target.classList.contains('map-custom-select')) {
       const fieldName = e.target.dataset.fieldName;
       this.saveCustomValue(placeId, fieldName, e.target.value);
     }
@@ -363,14 +559,14 @@ class NaverMapScraper {
   showSidebar() {
     this.sidebar.classList.remove('collapsing');
     this.sidebar.classList.add('visible');
-    const toggleBtn = document.getElementById('nmap-toggle-visibility-btn');
+    const toggleBtn = document.getElementById('map-toggle-visibility-btn');
     if (toggleBtn) toggleBtn.textContent = '━';
   }
 
   hideSidebar() {
     this.sidebar.classList.add('collapsing');
     this.sidebar.classList.remove('visible');
-    const toggleBtn = document.getElementById('nmap-toggle-visibility-btn');
+    const toggleBtn = document.getElementById('map-toggle-visibility-btn');
     if (toggleBtn) toggleBtn.textContent = '⬆';
     
     // 애니메이션 완료 후 collapsing 클래스 제거
@@ -441,12 +637,12 @@ class NaverMapScraper {
   }
 
   updateListSelect() {
-    const select = document.getElementById('nmap-list-select');
+    const select = document.getElementById('map-list-select');
     select.innerHTML = this.renderListOptions();
   }
 
   updatePlacesContainer() {
-    const container = document.getElementById('nmap-places-container');
+    const container = document.getElementById('map-places-container');
     
     // 포커스된 요소 정보 저장
     const focusInfo = this.saveFocusState();
@@ -515,7 +711,7 @@ class NaverMapScraper {
     this.saveData();
     this.updateListSelect();
     this.currentListId = id;
-    document.getElementById('nmap-list-select').value = id;
+    document.getElementById('map-list-select').value = id;
     this.updatePlacesContainer();
   }
 
@@ -552,7 +748,7 @@ class NaverMapScraper {
     this.updateListSelect();
     
     // 선택된 값 유지
-    const listSelect = document.getElementById('nmap-list-select');
+    const listSelect = document.getElementById('map-list-select');
     if (listSelect) {
       listSelect.value = this.currentListId;
     }
@@ -577,13 +773,27 @@ class NaverMapScraper {
     console.log('addCurrentPlace 함수 실행됨');
     
     try {
-      const placeData = await this.extractCurrentPlaceData();
+      const currentPlatform = PlatformDetector.detectCurrentPlatform();
+      console.log('감지된 플랫폼:', currentPlatform);
+      
+      const extractor = ExtractorFactory.getExtractor(currentPlatform);
+      if (!extractor) {
+        alert(`현재 플랫폼(${PlatformDetector.getPlatformDisplayName(currentPlatform)})은 아직 지원되지 않습니다.`);
+        return;
+      }
+      
+      if (!extractor.canExtract()) {
+        alert('현재 선택된 장소 정보를 찾을 수 없습니다. 지도에서 장소를 클릭해주세요.');
+        return;
+      }
+      
+      const placeData = await extractor.extractPlaceData();
       console.log('추출된 장소 데이터:', placeData);
       
       if (placeData) {
         this.addPlace(placeData);
       } else {
-        alert('현재 선택된 장소 정보를 찾을 수 없습니다. 지도에서 장소를 클릭해주세요.');
+        alert('장소 정보를 가져오는 중 문제가 발생했습니다.');
       }
     } catch (error) {
       console.error('장소 추가 중 오류:', error);
@@ -591,95 +801,6 @@ class NaverMapScraper {
     }
   }
 
-  async extractCurrentPlaceData() {
-    try {
-      const placeId = this.extractPlaceIdFromURL();
-      if (!placeId) return null;
-
-      const placeInfo = await this.fetchPlaceInfo(placeId);
-      if (!placeInfo) return null;
-
-      return {
-        id: placeId,
-        name: placeInfo.name,
-        category: placeInfo.category,
-        rating: placeInfo.rating,
-        url: window.location.href,
-        customValues: {},
-        memo: ''
-      };
-    } catch (error) {
-      console.error('장소 데이터 추출 실패:', error);
-      return null;
-    }
-  }
-
-  extractPlaceIdFromURL() {
-    const urlMatch = window.location.href.match(/\/place\/(\d+)/);
-    return urlMatch ? urlMatch[1] : null;
-  }
-
-  async fetchPlaceInfo(placeId) {
-    try {
-      const apiUrl = `https://pcmap.place.naver.com/place/${placeId}`;
-      const response = await chrome.runtime.sendMessage({
-        action: 'fetch-place-data',
-        url: apiUrl
-      });
-
-      if (!response.success || !response.html) {
-        console.log('Background script API 요청 실패:', response.error);
-        return null;
-      }
-
-      return this.parseHtmlForPlaceInfo(response.html);
-    } catch (error) {
-      console.log('Background script 통신 오류:', error);
-      return null;
-    }
-  }
-
-  parseHtmlForPlaceInfo(html) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    const name = this.extractTextFromSelectors(doc, [
-      '#_title .GHAhO',
-      '.GHAhO',
-      '.LylZZ .GHAhO'
-    ]);
-
-    const category = this.extractTextFromSelectors(doc, [
-      '#_title .lnJFt',
-      '.lnJFt',
-      '.LylZZ .lnJFt'
-    ]);
-
-    const rating = this.extractRating(doc);
-
-    if (!name) return null;
-
-    return { name, category, rating };
-  }
-
-  extractTextFromSelectors(doc, selectors) {
-    for (const selector of selectors) {
-      const element = doc.querySelector(selector);
-      if (element) {
-        return element.textContent.trim();
-      }
-    }
-    return '';
-  }
-
-  extractRating(doc) {
-    const ratingElement = doc.querySelector('.PXMot.LXIwF');
-    if (!ratingElement) return '';
-
-    const fullText = ratingElement.textContent || ratingElement.innerText || '';
-    const ratingMatch = fullText.match(/별점(\d+\.?\d*)/);
-    return ratingMatch ? ratingMatch[1] : '';
-  }
 
   addPlace(placeData) {
     let currentList = this.getCurrentList();
@@ -698,7 +819,7 @@ class NaverMapScraper {
       
       // UI 업데이트
       this.updateListSelect();
-      document.getElementById('nmap-list-select').value = newListId;
+      document.getElementById('map-list-select').value = newListId;
     }
     
     if (this.isPlaceAlreadyExists(currentList, placeData.id)) {
@@ -814,13 +935,13 @@ class NaverMapScraper {
   // 모달 입력 다이얼로그
   async showInputModal(title, message, defaultValue = '') {
     return new Promise((resolve) => {
-      const modal = document.getElementById('nmap-input-modal');
-      const titleEl = document.getElementById('nmap-input-modal-title');
-      const messageEl = document.getElementById('nmap-input-modal-message');
-      const inputEl = document.getElementById('nmap-input-modal-input');
-      const confirmBtn = document.getElementById('nmap-input-modal-confirm');
-      const cancelBtn = document.getElementById('nmap-input-modal-cancel');
-      const closeBtn = document.getElementById('nmap-input-modal-close');
+      const modal = document.getElementById('map-input-modal');
+      const titleEl = document.getElementById('map-input-modal-title');
+      const messageEl = document.getElementById('map-input-modal-message');
+      const inputEl = document.getElementById('map-input-modal-input');
+      const confirmBtn = document.getElementById('map-input-modal-confirm');
+      const cancelBtn = document.getElementById('map-input-modal-cancel');
+      const closeBtn = document.getElementById('map-input-modal-close');
 
       // 모달 설정
       titleEl.textContent = title;
@@ -876,7 +997,7 @@ class NaverMapScraper {
 
   // ==================== 커스텀 필드 관리 ====================
   showFieldsModal() {
-    const modal = document.getElementById('nmap-fields-modal');
+    const modal = document.getElementById('map-fields-modal');
     this.renderFieldsList();
     modal.style.display = 'block';
     
@@ -887,9 +1008,9 @@ class NaverMapScraper {
     if (this.fieldsModalInitialized) return;
     this.fieldsModalInitialized = true;
     
-    const closeBtn = document.getElementById('nmap-fields-modal-close');
-    const addFieldBtn = document.getElementById('nmap-add-field-btn');
-    const fieldsList = document.getElementById('nmap-fields-list');
+    const closeBtn = document.getElementById('map-fields-modal-close');
+    const addFieldBtn = document.getElementById('map-add-field-btn');
+    const fieldsList = document.getElementById('map-fields-list');
     
     closeBtn.addEventListener('click', () => this.hideFieldsModal());
     modal.addEventListener('click', (e) => {
@@ -899,7 +1020,7 @@ class NaverMapScraper {
     
     // 이벤트 위임으로 삭제 버튼 처리
     fieldsList.addEventListener('click', (e) => {
-      if (e.target.classList.contains('nmap-delete-field-btn')) {
+      if (e.target.classList.contains('map-delete-field-btn')) {
         e.stopPropagation();
         const fieldIndex = parseInt(e.target.dataset.fieldIndex);
         this.deleteCustomField(fieldIndex);
@@ -908,13 +1029,13 @@ class NaverMapScraper {
   }
 
   hideFieldsModal() {
-    const modal = document.getElementById('nmap-fields-modal');
+    const modal = document.getElementById('map-fields-modal');
     modal.style.display = 'none';
   }
 
   renderFieldsList() {
     const currentList = this.getCurrentList();
-    const fieldsList = document.getElementById('nmap-fields-list');
+    const fieldsList = document.getElementById('map-fields-list');
     
     if (!fieldsList) {
       console.error('필드 목록 요소를 찾을 수 없습니다.');
@@ -942,13 +1063,13 @@ class NaverMapScraper {
     const optionsText = field.type === 'select' && field.options ? `(${field.options.join(', ')})` : '';
     
     return `
-      <div class="nmap-field-item">
+      <div class="map-field-item">
         <div class="nmap-field-info">
           <span class="nmap-field-name">${field.name}</span>
           <span class="nmap-field-type">${typeText}</span>
           ${optionsText ? `<span class="nmap-field-options">${optionsText}</span>` : ''}
         </div>
-        <button class="nmap-delete-field-btn" data-field-index="${index}">삭제</button>
+        <button class="map-delete-field-btn" data-field-index="${index}">삭제</button>
       </div>
     `;
   }
@@ -1144,7 +1265,7 @@ class NaverMapScraper {
     this.updatePlacesContainer();
     
     // 리스트 선택기 값도 동기화
-    const listSelect = document.getElementById('nmap-list-select');
+    const listSelect = document.getElementById('map-list-select');
     if (listSelect) {
       listSelect.value = this.currentListId || '';
     }
@@ -1196,7 +1317,7 @@ class NaverMapScraper {
       const placeId = this.extractPlaceIdFromURL();
       this.currentPlaceData = placeId ? { id: placeId } : null;
       
-      const addCurrentBtn = document.getElementById('nmap-add-current-btn');
+      const addCurrentBtn = document.getElementById('map-add-current-btn');
       if (addCurrentBtn) {
         addCurrentBtn.disabled = !this.currentPlaceData;
       }
@@ -1209,8 +1330,8 @@ class NaverMapScraper {
 // 초기화
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    new NaverMapScraper();
+    new MapScraper();
   });
 } else {
-  new NaverMapScraper();
+  new MapScraper();
 }

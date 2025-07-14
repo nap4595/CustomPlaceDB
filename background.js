@@ -1,8 +1,8 @@
-// 네이버 지도 장소 스크랩 Background Script
+// 지도 장소 스크랩 Background Script
 
 // 익스텐션 설치
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('네이버 지도 장소 스크랩 익스텐션이 설치되었습니다.');
+  console.log('지도 장소 스크랩 익스텐션이 설치되었습니다.');
 });
 
 // 메시지 처리
@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
-  if (request.action === 'fetch-place-data') {
+  if (request.action === 'fetchPlaceInfo') {
     console.log('Background script에서 API 호출:', request.url);
     
     fetch(request.url, {
@@ -42,7 +42,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })
     .then(html => {
       console.log('Background script API 응답 성공');
-      sendResponse({ success: true, html: html });
+      sendResponse({ success: true, data: html });
     })
     .catch(error => {
       console.error('Background script API 오류:', error);
@@ -56,6 +56,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // 탭 업데이트 감지
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url && tab.url.includes('map.naver.com')) {
-    console.log('네이버 지도 페이지가 로드되었습니다.');
+    console.log('지도 페이지가 로드되었습니다.');
   }
 });
