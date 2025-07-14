@@ -8,9 +8,9 @@ class PlatformDetector {
     
     if (hostname.includes('naver.com') && (pathname.includes('/map') || hostname.includes('map.naver.com'))) {
       return 'naver';
-    } else if (hostname.includes('kakao.com') && pathname.includes('/map')) {
+    } else if (hostname.includes('kakao.com')) {
       return 'kakao';
-    } else if (hostname.includes('google.com') && pathname.includes('/maps')) {
+    } else if ((hostname.includes('google.com') || hostname.includes('google.co.kr')) && pathname.includes('/maps')) {
       return 'google';
     }
     
@@ -33,8 +33,8 @@ class PlatformDetector {
   static getPlatformColor(platform) {
     const colors = {
       'naver': '#03c75a',
-      'kakao': '#ffcd00',
-      'google': '#4285f4'
+      'kakao': '#FFE300',
+      'google': '#007B8B'
     };
     return colors[platform] || '#666666';
   }
@@ -165,17 +165,177 @@ class ExtractorFactory {
       case 'naver':
         return new NaverMapExtractor();
       case 'kakao':
-        // TODO: 카카오맵 추출기 구현 예정
-        console.log('카카오맵 추출기는 아직 구현되지 않았습니다.');
-        return null;
+        return new KakaoMapExtractor();
       case 'google':
-        // TODO: 구글지도 추출기 구현 예정
-        console.log('구글지도 추출기는 아직 구현되지 않았습니다.');
-        return null;
+        return new GoogleMapExtractor();
       default:
         console.log('지원하지 않는 플랫폼입니다:', targetPlatform);
         return null;
     }
+  }
+}
+
+// 카카오맵 데이터 추출기
+class KakaoMapExtractor extends BaseMapExtractor {
+  constructor() {
+    super();
+    this.platform = 'kakao';
+  }
+  
+  canExtract() {
+    return PlatformDetector.detectCurrentPlatform() === 'kakao' && 
+           window.location.href.includes('place.map.kakao.com');
+  }
+  
+  async extractPlaceData() {
+    try {
+      const placeId = this.extractPlaceIdFromURL();
+      const placeInfo = this.extractPlaceInfoFromDOM();
+      
+      if (!placeInfo.name) return null;
+      
+      return {
+        id: placeId || Date.now().toString(),
+        name: placeInfo.name,
+        platform: this.platform,
+        category: placeInfo.category,
+        rating: placeInfo.rating,
+        url: window.location.href,
+        customValues: {},
+        memo: ''
+      };
+    } catch (error) {
+      console.error('카카오맵 데이터 추출 실패:', error);
+      return null;
+    }
+  }
+  
+  extractPlaceIdFromURL() {
+    const url = window.location.href;
+    const match = url.match(/place\.map\.kakao\.com\/(\d+)/);
+    return match ? match[1] : null;
+  }
+  
+  extractPlaceInfoFromDOM() {
+    // 장소명: <h3 class="tit_place"><span class="screen_out">장소명</span>공원칼국수</h3>
+    const nameElement = document.querySelector('.tit_place');
+    const name = nameElement ? nameElement.textContent.replace('장소명', '').trim() : null;
+    
+    // 카테고리: <span class="info_cate"><span class="screen_out">장소 카테고리</span>칼국수</span>
+    const categoryElement = document.querySelector('.info_cate');
+    const category = categoryElement ? categoryElement.textContent.replace('장소 카테고리', '').trim() : null;
+    
+    // 별점: <span class="num_star">4.6</span>
+    const ratingElement = document.querySelector('.num_star');
+    const rating = ratingElement ? parseFloat(ratingElement.textContent) : null;
+    
+    return {
+      name: name || '이름 없음',
+      category: category || '카테고리 없음',
+      rating: rating
+    };
+  }
+}
+
+// 구글지도 데이터 추출기
+class GoogleMapExtractor extends BaseMapExtractor {
+  constructor() {
+    super();
+    this.platform = 'google';
+  }
+  
+  canExtract() {
+    return PlatformDetector.detectCurrentPlatform() === 'google' && 
+           window.location.href.includes('/place/');
+  }
+  
+  async extractPlaceData() {
+    try {
+      const placeId = this.extractPlaceIdFromURL();
+      const placeInfo = this.extractPlaceInfoFromDOM();
+      
+      if (!placeInfo.name) return null;
+      
+      return {
+        id: placeId || Date.now().toString(),
+        name: placeInfo.name,
+        platform: this.platform,
+        category: placeInfo.category,
+        rating: placeInfo.rating,
+        url: window.location.href,
+        customValues: {},
+        memo: ''
+      };
+    } catch (error) {
+      console.error('구글지도 데이터 추출 실패:', error);
+      return null;
+    }
+  }
+  
+  extractPlaceIdFromURL() {
+    const url = window.location.href;
+    if (url.includes('/place/')) {
+      const dataMatch = url.match(/data=([^&]+)/);
+      if (dataMatch) {
+        const decodedData = decodeURIComponent(dataMatch[1]);
+        const placeIdMatch = decodedData.match(/1s([^!]+)/);
+        return placeIdMatch ? placeIdMatch[1] : null;
+      }
+    }
+    return null;
+  }
+  
+  extractPlaceInfoFromDOM() {
+    // 장소명: h1 태그에서 추출
+    const nameElement = document.querySelector('main h1') || 
+                       document.querySelector('[role="main"] h1') ||
+                       document.querySelector('h1');
+    const name = nameElement ? nameElement.textContent.trim() : null;
+    
+    // 별점: <span aria-hidden="true">4.2</span> (별표와 함께 있는 영역에서)
+    let rating = null;
+    
+    // 방법 1: F7nice 클래스 내의 aria-hidden="true" 요소
+    const ratingContainer = document.querySelector('.F7nice');
+    if (ratingContainer) {
+      const ratingElement = ratingContainer.querySelector('[aria-hidden="true"]');
+      if (ratingElement) {
+        const ratingText = ratingElement.textContent.trim();
+        const ratingMatch = ratingText.match(/^(\d+\.?\d*)$/);
+        if (ratingMatch && parseFloat(ratingMatch[1]) >= 1 && parseFloat(ratingMatch[1]) <= 5) {
+          rating = parseFloat(ratingMatch[1]);
+        }
+      }
+    }
+    
+    // 방법 2: 별표 이미지가 있는 영역 근처의 숫자
+    if (!rating) {
+      const starElements = document.querySelectorAll('[role="img"][aria-label*="별표"]');
+      for (const starElement of starElements) {
+        const container = starElement.closest('div');
+        if (container) {
+          const ratingElement = container.querySelector('[aria-hidden="true"]');
+          if (ratingElement) {
+            const ratingText = ratingElement.textContent.trim();
+            const ratingMatch = ratingText.match(/^(\d+\.?\d*)$/);
+            if (ratingMatch && parseFloat(ratingMatch[1]) >= 1 && parseFloat(ratingMatch[1]) <= 5) {
+              rating = parseFloat(ratingMatch[1]);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // 카테고리: <button class="DkEaL " jsaction="pane.wfvdle17.category">냉면 전문점</button>
+    const categoryButton = document.querySelector('button[jsaction*="category"]');
+    const category = categoryButton ? categoryButton.textContent.trim() : null;
+    
+    return {
+      name: name || '이름 없음',
+      category: category || '카테고리 없음',
+      rating: rating
+    };
   }
 }
 
@@ -205,10 +365,25 @@ class MapScraper {
       const result = await chrome.storage.local.get(['mapScraperData']);
       if (result.mapScraperData) {
         this.lists = result.mapScraperData;
+        
+        // 기존 목록이 있다면 첫 번째 목록을 현재 목록으로 설정
+        const listIds = Object.keys(this.lists);
+        if (listIds.length > 0) {
+          this.currentListId = listIds[0];
+          console.log('첫 번째 목록 로드:', this.currentListId, this.lists[this.currentListId].name);
+        } else {
+          this.currentListId = null;
+          console.log('저장된 목록이 없습니다.');
+        }
+      } else {
+        this.lists = {};
+        this.currentListId = null;
+        console.log('초기 상태: 목록이 없습니다.');
       }
-      // 자동 기본 목록 생성 제거
     } catch (error) {
       console.error('데이터 로드 실패:', error);
+      this.lists = {};
+      this.currentListId = null;
     }
   }
 
@@ -230,9 +405,81 @@ class MapScraper {
     }
   }
 
+  applyPlatformColors() {
+    const platform = PlatformDetector.detectCurrentPlatform();
+    const color = PlatformDetector.getPlatformColor(platform);
+    
+    console.log(`${platform} 플랫폼 색상 적용:`, color);
+    
+    // CSS 커스텀 속성으로 플랫폼 색상 설정
+    document.documentElement.style.setProperty('--platform-color', color);
+    
+    // 동적으로 스타일 적용
+    const style = document.createElement('style');
+    style.textContent = `
+      .map-sidebar-header {
+        background-color: ${color} !important;
+      }
+      .map-list-select:focus {
+        border-color: ${color} !important;
+        box-shadow: 0 0 0 2px ${color}33 !important;
+      }
+      .map-list-btn {
+        border-color: ${color} !important;
+        color: ${color} !important;
+      }
+      .map-list-btn:hover {
+        background-color: ${color} !important;
+        color: white !important;
+      }
+      .map-add-current-btn {
+        background-color: ${color} !important;
+      }
+      .map-add-current-btn:hover {
+        background-color: ${color}dd !important;
+      }
+      .map-memo-textarea:focus {
+        border-color: ${color} !important;
+      }
+      .map-custom-input:focus,
+      .map-custom-select:focus {
+        border-color: ${color} !important;
+      }
+      .map-modal-header {
+        background-color: ${color} !important;
+      }
+      .map-add-field-btn {
+        background-color: ${color} !important;
+      }
+      .map-add-field-btn:hover {
+        background-color: ${color}dd !important;
+      }
+      .map-input-field:focus {
+        border-color: ${color} !important;
+        box-shadow: 0 0 0 2px ${color}33 !important;
+      }
+      .map-btn-primary {
+        background-color: ${color} !important;
+      }
+      .map-btn-primary:hover {
+        background-color: ${color}dd !important;
+      }
+    `;
+    
+    // 기존 플랫폼 스타일 제거
+    const existingStyle = document.getElementById('map-platform-style');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    style.id = 'map-platform-style';
+    document.head.appendChild(style);
+  }
+
   // ==================== UI 생성 ====================
   createSidebar() {
     this.createSidebarContainer();
+    this.applyPlatformColors();
   }
 
 
@@ -1276,8 +1523,8 @@ class MapScraper {
   setupStorageChangeListener() {
     // Chrome Storage 변경 감지
     chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === 'local' && changes.nmapScraperData) {
-        console.log('nmapScraperData 변경 감지됨');
+      if (namespace === 'local' && changes.mapScraperData) {
+        console.log('mapScraperData 변경 감지됨');
         this.reloadDataAndUpdateUI();
       }
     });
@@ -1293,6 +1540,7 @@ class MapScraper {
       const newURL = window.location.href;
       if (currentURL !== newURL) {
         currentURL = newURL;
+        this.applyPlatformColors(); // 플랫폼이 변경될 수 있으므로 색상 재적용
         this.updateCurrentPlaceData();
       }
     };
@@ -1314,12 +1562,21 @@ class MapScraper {
 
   updateCurrentPlaceData() {
     try {
-      const placeId = this.extractPlaceIdFromURL();
-      this.currentPlaceData = placeId ? { id: placeId } : null;
+      const currentPlatform = PlatformDetector.detectCurrentPlatform();
+      const extractor = ExtractorFactory.getExtractor(currentPlatform);
+      
+      let hasPlaceData = false;
+      if (extractor && extractor.canExtract()) {
+        const placeId = extractor.extractPlaceIdFromURL();
+        this.currentPlaceData = placeId ? { id: placeId } : null;
+        hasPlaceData = !!placeId;
+      } else {
+        this.currentPlaceData = null;
+      }
       
       const addCurrentBtn = document.getElementById('map-add-current-btn');
       if (addCurrentBtn) {
-        addCurrentBtn.disabled = !this.currentPlaceData;
+        addCurrentBtn.disabled = !hasPlaceData;
       }
     } catch (error) {
       console.error('데이터 감지 오류:', error);

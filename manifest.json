@@ -10,11 +10,28 @@
   ],
   "host_permissions": [
     "https://map.naver.com/*",
-    "https://pcmap.place.naver.com/*"
+    "https://pcmap.place.naver.com/*",
+    "https://map.kakao.com/*",
+    "https://place.map.kakao.com/*",
+    "https://maps.google.com/*",
+    "https://www.google.com/*",
+    "https://www.google.co.kr/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://map.naver.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://map.kakao.com/*", "https://place.map.kakao.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://maps.google.com/*", "https://www.google.com/maps*", "https://www.google.co.kr/maps*"],
       "js": ["content.js"],
       "css": ["sidebar.css"],
       "run_at": "document_end"

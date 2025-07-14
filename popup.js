@@ -28,6 +28,18 @@ function setupEventListeners() {
     });
   });
   
+  document.getElementById('open-kakao-map').addEventListener('click', () => {
+    chrome.tabs.create({
+      url: 'https://map.kakao.com'
+    });
+  });
+  
+  document.getElementById('open-google-map').addEventListener('click', () => {
+    chrome.tabs.create({
+      url: 'https://maps.google.com'
+    });
+  });
+  
   document.getElementById('export-data').addEventListener('click', () => {
     showExportModal();
   });
