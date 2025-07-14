@@ -53,6 +53,7 @@ function setupEventListeners() {
   });
   
   setupExportModalEventListeners();
+  setupImportModalEventListeners();
   setupFileInputEventListener();
 }
 
@@ -64,7 +65,7 @@ async function checkNaverMapTab() {
     
     const openMapBtn = document.getElementById('open-naver-map');
     if (tabs.length > 0) {
-      openMapBtn.textContent = '네이버 지도로 이동';
+      openMapBtn.textContent = '네이버지도';
       openMapBtn.onclick = () => {
         chrome.tabs.update(tabs[0].id, { active: true });
         chrome.windows.update(tabs[0].windowId, { focused: true });
@@ -107,6 +108,40 @@ function setupExportModalEventListeners() {
   });
 }
 
+function setupImportModalEventListeners() {
+  document.getElementById('import-merge').addEventListener('click', () => {
+    hideImportModal();
+    handleImportChoice('merge');
+  });
+  
+  document.getElementById('import-replace').addEventListener('click', () => {
+    hideImportModal();
+    handleImportChoice('replace');
+  });
+  
+  document.getElementById('import-cancel').addEventListener('click', () => {
+    hideImportModal();
+    // 파일 입력 초기화
+    document.getElementById('file-input').value = '';
+  });
+  
+  // 모달 배경 클릭 시 닫기
+  document.getElementById('import-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'import-modal') {
+      hideImportModal();
+      document.getElementById('file-input').value = '';
+    }
+  });
+}
+
+function showImportModal() {
+  document.getElementById('import-modal').style.display = 'block';
+}
+
+function hideImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+}
+
 // ==================== JSON 내보내기 ====================
 async function exportDataAsJSON() {
   try {
@@ -135,10 +170,10 @@ async function exportDataAsJSON() {
     a.click();
     
     URL.revokeObjectURL(url);
-    showMessage('JSON 파일이 성공적으로 내보내졌습니다!');
+    await showMessage('JSON 파일이 성공적으로 내보내졌습니다!');
   } catch (error) {
     console.error('JSON 내보내기 실패:', error);
-    showMessage('JSON 내보내기에 실패했습니다.');
+    await showMessage('JSON 내보내기에 실패했습니다.');
   }
 }
 
@@ -169,10 +204,10 @@ async function exportDataAsCSV() {
     a.click();
     
     URL.revokeObjectURL(url);
-    showMessage('CSV 파일이 성공적으로 내보내졌습니다!');
+    await showMessage('CSV 파일이 성공적으로 내보내졌습니다!');
   } catch (error) {
     console.error('CSV 내보내기 실패:', error);
-    showMessage('CSV 내보내기에 실패했습니다.');
+    await showMessage('CSV 내보내기에 실패했습니다.');
   }
 }
 
@@ -192,8 +227,8 @@ function generateCSVData(lists) {
       return;
     }
     
-    // 헤더 생성
-    const headers = ['장소명', '카테고리', '별점', 'URL'];
+    // 헤더 생성 (새로운 순서: 장소명 → 카테고리 → 별점 → 플랫폼 → 커스텀필드 → 메모 → URL)
+    const headers = ['장소명', '카테고리', '별점', '플랫폼'];
     
     // 커스텀 필드 헤더 추가
     if (list.customFields && list.customFields.length > 0) {
@@ -203,6 +238,7 @@ function generateCSVData(lists) {
     }
     
     headers.push('메모');
+    headers.push('URL');
     
     // 헤더 행 추가
     csvContent += headers.map(header => `"${header}"`).join(',') + '\n';
@@ -213,7 +249,7 @@ function generateCSVData(lists) {
         place.name || '',
         place.category || '',
         place.rating || '',
-        place.url || ''
+        place.platform || '네이버' // 기본값은 네이버 (기존 데이터 호환성)
       ];
       
       // 커스텀 필드 값 추가
@@ -225,6 +261,7 @@ function generateCSVData(lists) {
       }
       
       row.push(place.memo || '');
+      row.push(place.url || ''); // URL을 마지막에 추가
       
       // CSV 형식으로 변환 (따옴표 처리)
       csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
@@ -235,6 +272,8 @@ function generateCSVData(lists) {
 }
 
 // ==================== 데이터 가져오기 ====================
+let pendingImportData = null; // 가져올 데이터를 임시 저장
+
 function importData() {
   document.getElementById('file-input').click();
 }
@@ -249,6 +288,7 @@ async function handleFileImport(event) {
   
   if (!file.name.endsWith('.json')) {
     alert('JSON 파일만 가져올 수 있습니다.');
+    event.target.value = '';
     return;
   }
   
@@ -259,27 +299,41 @@ async function handleFileImport(event) {
     // 데이터 유효성 검사
     if (!importedData.lists || typeof importedData.lists !== 'object') {
       alert('유효하지 않은 데이터 형식입니다.');
+      event.target.value = '';
       return;
     }
     
-    // 기존 데이터와 병합할지 확인
-    const shouldMerge = confirm('기존 데이터와 병합하시겠습니까?\n\n확인: 기존 데이터와 병합\n취소: 기존 데이터를 모두 교체');
-    
-    if (shouldMerge) {
-      await mergeImportedData(importedData.lists);
-    } else {
-      await replaceAllData(importedData.lists);
-    }
-    
-    // 파일 입력 초기화
-    event.target.value = '';
-    
-    showMessage('데이터가 성공적으로 가져와졌습니다!');
-    loadStats();
+    // 임시로 데이터 저장하고 모달 표시
+    pendingImportData = importedData.lists;
+    showImportModal();
     
   } catch (error) {
     console.error('데이터 가져오기 실패:', error);
     alert('파일을 읽는 중 오류가 발생했습니다. 올바른 JSON 파일인지 확인해주세요.');
+    event.target.value = '';
+  }
+}
+
+async function handleImportChoice(choice) {
+  if (!pendingImportData) return;
+  
+  try {
+    if (choice === 'merge') {
+      await mergeImportedData(pendingImportData);
+    } else if (choice === 'replace') {
+      await replaceAllData(pendingImportData);
+    }
+    
+    // 파일 입력 초기화 및 임시 데이터 정리
+    document.getElementById('file-input').value = '';
+    pendingImportData = null;
+    
+    await showMessage('데이터가 성공적으로 가져와졌습니다!');
+    loadStats();
+    
+  } catch (error) {
+    console.error('데이터 처리 실패:', error);
+    await showMessage('데이터 처리 중 오류가 발생했습니다.');
   }
 }
 
@@ -337,15 +391,17 @@ async function clearAllData() {
     document.getElementById('list-count').textContent = '0';
     document.getElementById('place-count').textContent = '0';
     
-    showMessage('모든 데이터가 삭제되었습니다.');
+    await showMessage('모든 데이터가 삭제되었습니다.');
   } catch (error) {
     console.error('데이터 삭제 실패:', error);
-    showMessage('데이터 삭제에 실패했습니다.');
+    await showMessage('데이터 삭제에 실패했습니다.');
   }
 }
 
 // ==================== 유틸리티 ====================
-function showMessage(message) {
+async function showMessage(message) {
+  const platformColor = await getCurrentPlatformColor();
+  
   const messageDiv = document.createElement('div');
   messageDiv.style.cssText = `
     position: fixed;
@@ -357,7 +413,7 @@ function showMessage(message) {
     font-size: 12px;
     font-weight: bold;
     z-index: 1000;
-    background-color: #03c75a;
+    background-color: ${platformColor};
     color: white;
   `;
   messageDiv.textContent = message;
@@ -368,6 +424,31 @@ function showMessage(message) {
       document.body.removeChild(messageDiv);
     }
   }, 3000);
+}
+
+async function getCurrentPlatformColor() {
+  try {
+    // 현재 활성 탭 확인
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tabs.length === 0) return '#000'; // 기본값
+    
+    const currentTab = tabs[0];
+    const url = currentTab.url;
+    
+    // 플랫폼 감지
+    if (url.includes('naver.com') && url.includes('/map')) {
+      return '#03c75a'; // 네이버 초록
+    } else if (url.includes('kakao.com')) {
+      return '#FFE300'; // 카카오 노랑
+    } else if ((url.includes('google.com') || url.includes('google.co.kr')) && url.includes('/maps')) {
+      return '#007B8B'; // 구글 청록
+    }
+    
+    return '#000'; // 기본값 (검은색)
+  } catch (error) {
+    console.error('플랫폼 색상 감지 실패:', error);
+    return '#000'; // 기본값
+  }
 }
 
 chrome.storage.onChanged.addListener((changes, namespace) => {

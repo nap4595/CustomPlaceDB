@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지도 장소 스크랩</title>
+    <title>CustomPlaceDB</title>
     <style>
         body {
             width: 300px;
@@ -155,7 +155,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>지도 장소 스크랩</h1>
+        <h1>CustomPlaceDB</h1>
         <p>다양한 지도 서비스에서 장소를 간편하게 저장하고 관리하세요</p>
     </div>
     
@@ -170,13 +170,6 @@
         </div>
     </div>
     
-    <div class="info-section">
-        <h3>사용 방법</h3>
-        <p>1. 지도 서비스에서 장소를 클릭하세요<br>
-        2. 우측 사이드바의 '현재 보고 있는 장소 추가' 버튼을 클릭하세요<br>
-        3. 저장된 장소를 목록에서 확인하세요</p>
-    </div>
-    
     <div class="action-buttons">
         <button class="action-btn primary-btn naver-btn" id="open-naver-map">네이버지도</button>
         <button class="action-btn primary-btn kakao-btn" id="open-kakao-map">카카오맵</button>
@@ -186,6 +179,33 @@
             <button class="action-btn secondary-btn" id="import-data">데이터 가져오기</button>
         </div>
         <button class="action-btn secondary-btn" id="clear-data">모든 데이터 삭제</button>
+    </div>
+    
+    <div class="info-section">
+        <h3>사용 방법</h3>
+        <p><strong>1. 지도 서비스 접속</strong><br>
+        아래 버튼으로 네이버지도, 카카오맵, 구글지도 중 하나를 선택하세요<br><br>
+        
+        <strong>2. 장소 선택</strong><br>
+        지도에서 저장하고 싶은 장소를 클릭하여 상세 정보를 확인하세요<br><br>
+        
+        <strong>3. 목록 관리</strong><br>
+        우측 사이드바에서 '새 목록 생성' 버튼으로 목록을 만들거나 기존 목록을 선택하세요<br><br>
+        
+        <strong>4. 장소 저장</strong><br>
+        사이드바의 '현재 보고 있는 장소 추가' 버튼을 클릭하면 장소명, 카테고리, 별점이 자동으로 저장됩니다<br><br>
+        
+        <strong>5. 💎 커스텀 필드 관리 (핵심 기능)</strong><br>
+        <em>이 앱의 가장 강력한 기능입니다!</em> '커스텀 필드 관리'에서 나만의 분류 체계를 만들어보세요:<br>
+        • 텍스트형 필드: 가격대, 주차정보, 특이사항 등 자유로운 정보 입력<br>
+        • 선택형 필드: 방문여부(가봤음/안가봤음), 평점(1-5점), 우선순위(높음/보통/낮음) 등<br>
+        • 맞춤형 데이터베이스: 맛집 탐방, 여행 계획, 부동산 검색 등 용도에 맞게 완전히 커스터마이즈 가능<br><br>
+        
+        <strong>6. 추가 정보 입력</strong><br>
+        저장된 장소에 상세한 메모를 추가하고, 설정한 커스텀 필드에 값을 입력하세요<br><br>
+        
+        <strong>7. 데이터 백업</strong><br>
+        '데이터 내보내기'로 CSV나 JSON 형식으로 백업하고, 다른 기기에서 '데이터 가져오기'로 복원할 수 있습니다</p>
     </div>
     
     <!-- 내보내기 형식 선택 모달 -->
@@ -199,12 +219,25 @@
             </div>
         </div>
     </div>
+
+    <!-- 데이터 가져오기 선택 모달 -->
+    <div id="import-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 280px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #000;">데이터 가져오기</h3>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #000; line-height: 1.4;">기존 데이터를 어떻게 처리하시겠습니까?</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="action-btn primary-btn" id="import-merge">기존 데이터 유지 (병합)</button>
+                <button class="action-btn secondary-btn" id="import-replace">기존 데이터 제거 (교체)</button>
+                <button class="action-btn secondary-btn" id="import-cancel" style="margin-top: 10px;">취소</button>
+            </div>
+        </div>
+    </div>
     
     <!-- 파일 입력 (숨김) -->
     <input type="file" id="file-input" accept=".json" style="display: none;">
     
     <div class="version">
-        버전 1.0.0
+        제작자: nap4595@gmail.com
     </div>
     
     <script src="popup.js"></script>

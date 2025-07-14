@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "지도 장소 스크랩",
+  "name": "CustomPlaceDB",
   "version": "1.0",
-  "description": "다양한 지도 서비스에서 장소를 간편하게 저장하고 관리하는 크롬 익스텐션",
+  "description": "커스텀 필드로 나만의 장소 데이터베이스를 만들어보세요",
   "permissions": [
     "storage",
     "tabs",
@@ -42,7 +42,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "지도 장소 스크랩"
+    "default_title": "CustomPlaceDB"
   },
   "icons": {
     "16": "icons/icon16.png",
