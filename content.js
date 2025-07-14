@@ -275,11 +275,27 @@ class GoogleMapExtractor extends BaseMapExtractor {
   extractPlaceIdFromURL() {
     const url = window.location.href;
     if (url.includes('/place/')) {
+      // 방법 1: URL에서 직접 place ID 추출 (/place/{place_name}/data=...!1s{place_id}!)
       const dataMatch = url.match(/data=([^&]+)/);
       if (dataMatch) {
         const decodedData = decodeURIComponent(dataMatch[1]);
-        const placeIdMatch = decodedData.match(/1s([^!]+)/);
-        return placeIdMatch ? placeIdMatch[1] : null;
+        // !1s 이후의 place ID 찾기 (마지막 !1s 사용)
+        const placeIdMatches = decodedData.match(/!1s([^!]+)/g);
+        if (placeIdMatches && placeIdMatches.length > 0) {
+          // 마지막 !1s 패턴에서 place ID 추출
+          const lastMatch = placeIdMatches[placeIdMatches.length - 1];
+          const placeId = lastMatch.replace('!1s', '');
+          console.log('추출된 구글 place ID:', placeId);
+          return placeId;
+        }
+      }
+      
+      // 방법 2: URL path에서 place 이름 사용 (fallback)
+      const pathMatch = url.match(/\/place\/([^\/]+)/);
+      if (pathMatch) {
+        const placeName = decodeURIComponent(pathMatch[1]);
+        console.log('place 이름으로 ID 생성:', placeName);
+        return placeName;
       }
     }
     return null;
@@ -1464,18 +1480,22 @@ class MapScraper {
   }
 
   showSuccessMessage(message) {
+    const platform = PlatformDetector.detectCurrentPlatform();
+    const platformColor = PlatformDetector.getPlatformColor(platform);
+    
     const messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
       position: fixed;
       top: 20px;
       right: 20px;
-      background: #03c75a;
+      background: ${platformColor};
       color: white;
       padding: 12px 20px;
       border-radius: 6px;
       z-index: 10002;
       font-size: 14px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-weight: bold;
     `;
     messageDiv.textContent = message;
     document.body.appendChild(messageDiv);
