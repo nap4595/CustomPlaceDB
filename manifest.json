@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "네이버 지도 장소 스크랩",
+  "version": "1.0",
+  "description": "네이버 지도에서 장소를 간편하게 저장하고 관리하는 크롬 익스텐션",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://map.naver.com/*",
+    "https://pcmap.place.naver.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://map.naver.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "네이버 지도 장소 스크랩"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
