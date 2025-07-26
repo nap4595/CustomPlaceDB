@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CustomPlaceDB - 개인정보 처리방침</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .highlight {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 15px 0;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .contact {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .date {
+            text-align: right;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>개인정보 처리방침</h1>
+        
+        <div class="highlight">
+            <strong>CustomPlaceDB</strong>는 사용자의 개인정보를 보호하고 투명한 데이터 처리를 위해 이 개인정보 처리방침을 제공합니다.
+        </div>
+
+        <div class="section">
+            <h2>1. 개인정보 수집 및 이용 목적</h2>
+            <p>CustomPlaceDB는 다음의 목적을 위해 최소한의 정보만을 수집합니다:</p>
+            <ul>
+                <li><strong>장소 정보 저장 서비스 제공</strong>: 사용자가 선택한 지도상의 장소를 개인 데이터베이스에 저장</li>
+                <li><strong>개인화된 메모 및 분류 기능</strong>: 사용자가 입력한 메모, 커스텀 필드를 통한 장소 분류</li>
+                <li><strong>다중 플랫폼 지원</strong>: 네이버지도, 카카오맵, 구글지도에서의 일관된 서비스 제공</li>
+                <li><strong>데이터 백업 및 복원</strong>: 사용자 데이터의 내보내기/가져오기 기능</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>2. 수집하는 개인정보의 항목</h2>
+            
+            <h3>2.1 수집하는 정보</h3>
+            <ul>
+                <li><strong>장소 정보</strong>: 장소명, 주소, 카테고리, 별점, URL</li>
+                <li><strong>사용자 입력 정보</strong>: 메모, 커스텀 필드 값, 목록 이름</li>
+                <li><strong>기술적 정보</strong>: 현재 방문 중인 지도 서비스 플랫폼 정보</li>
+            </ul>
+
+            <h3>2.2 수집하지 않는 정보</h3>
+            <ul>
+                <li>개인 식별정보 (이름, 이메일, 전화번호 등)</li>
+                <li>실시간 위치 추적 정보</li>
+                <li>브라우징 히스토리 (지도 서비스 외)</li>
+                <li>개인 연락처나 계정 정보</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>3. 개인정보의 처리 및 보유</h2>
+            
+            <h3>3.1 데이터 저장 방식</h3>
+            <ul>
+                <li><strong>로컬 저장</strong>: 모든 데이터는 사용자의 Chrome 브라우저 내부에만 저장됩니다</li>
+                <li><strong>외부 전송 없음</strong>: 수집된 정보는 외부 서버로 전송되지 않습니다</li>
+                <li><strong>암호화</strong>: Chrome의 기본 보안 정책에 따라 보호됩니다</li>
+            </ul>
+
+            <h3>3.2 데이터 보유 기간</h3>
+            <ul>
+                <li><strong>사용자 제어</strong>: 사용자가 직접 삭제하기 전까지 보관</li>
+                <li><strong>확장프로그램 제거 시</strong>: 확장프로그램 삭제와 함께 모든 데이터 자동 삭제</li>
+                <li><strong>브라우저 데이터 초기화 시</strong>: Chrome 데이터 초기화와 함께 삭제</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>4. 개인정보의 안전성 확보 조치</h2>
+            <ul>
+                <li><strong>입력값 검증</strong>: XSS 공격 방지를 위한 HTML 이스케이프 처리</li>
+                <li><strong>데이터 크기 제한</strong>: 입력 데이터의 길이 제한으로 오남용 방지</li>
+                <li><strong>로컬 저장소 활용</strong>: Chrome Storage API의 보안 정책 적용</li>
+                <li><strong>권한 최소화</strong>: 필요한 최소한의 브라우저 권한만 요청</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>5. 사용자 권리</h2>
+            <p>사용자는 다음의 권리를 가집니다:</p>
+            <ul>
+                <li><strong>데이터 열람</strong>: 저장된 모든 데이터를 확장프로그램 내에서 확인 가능</li>
+                <li><strong>데이터 수정/삭제</strong>: 언제든지 저장된 정보를 수정하거나 삭제 가능</li>
+                <li><strong>데이터 이동</strong>: JSON/CSV 형태로 데이터 내보내기 및 가져오기 가능</li>
+                <li><strong>서비스 중단</strong>: 확장프로그램 제거를 통한 서비스 이용 중단</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>6. 제3자 제공</h2>
+            <div class="highlight">
+                CustomPlaceDB는 사용자의 개인정보를 제3자에게 제공하지 않습니다. 
+                모든 데이터는 사용자의 로컬 환경에서만 처리됩니다.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>7. 개인정보 처리방침 변경</h2>
+            <p>이 개인정보 처리방침이 변경될 경우:</p>
+            <ul>
+                <li>확장프로그램 업데이트를 통해 사용자에게 고지</li>
+                <li>중요한 변경사항의 경우 별도 동의 절차 진행</li>
+                <li>변경된 방침은 고지 후 7일 뒤부터 적용</li>
+            </ul>
+        </div>
+
+        <div class="contact">
+            <h2>8. 문의처</h2>
+            <p>개인정보 처리에 관한 문의사항이 있으시면 아래 이메일로 연락해 주시기 바랍니다.</p>
+            <p><strong>이메일:</strong> nap4595@gmail.com</p>
+        </div>
+
+        <div class="date">
+            <strong>시행일자</strong>: 2025년 7월 26일<br>
+            <strong>최종 수정일</strong>: 2025년 7월 26일
+        </div>
+    </div>
+</body>
+</html>

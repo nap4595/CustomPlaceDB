@@ -36,7 +36,7 @@ function setupEventListeners() {
   
   document.getElementById('open-google-map').addEventListener('click', () => {
     chrome.tabs.create({
-      url: 'https://maps.google.com'
+      url: 'https://www.google.co.kr/maps'
     });
   });
   
@@ -50,6 +50,13 @@ function setupEventListeners() {
   
   document.getElementById('clear-data').addEventListener('click', async () => {
     await clearAllData();
+  });
+  
+  document.getElementById('privacy-policy-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('privacy.html')
+    });
   });
   
   setupExportModalEventListeners();
