@@ -1,9 +1,11 @@
 # CustomPlaceDB 🗺️
 
-커스텀 필드로 나만의 장소 데이터베이스를 만들어보세요
+네이버지도, 카카오맵, 구글지도에서 장소를 저장하고 개인 맞춤 데이터베이스를 구축하세요
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
 ![Version](https://img.shields.io/badge/Version-1.0-brightgreen?style=flat-square)
+![Privacy](https://img.shields.io/badge/Privacy-Local%20Storage-green?style=flat-square&logo=shield&logoColor=white)
+![Web Store Ready](https://img.shields.io/badge/Web%20Store-Ready-blue?style=flat-square&logo=googlechrome&logoColor=white)
 
 ## 🌟 주요 기능
 
@@ -15,7 +17,7 @@
 ### 🗺️ 다중 플랫폼 지원
 - **네이버지도** 🟢 - 가장 안정적인 데이터 추출
 - **카카오맵** 🟡 - 실시간 DOM 파싱
-- **구글지도** 🔵 - 국제적 장소 정보 지원
+- **구글지도** 🔵 - 한국 도메인(google.co.kr) 최적화
 
 ### 📊 데이터 관리
 - **자동 정보 추출**: 장소명, 카테고리, 별점 자동 수집
@@ -24,10 +26,22 @@
 - **메모 기능**: 각 장소에 개별 노트 추가
 - **백업/복원**: CSV, JSON 형식으로 데이터 내보내기/가져오기
 
+### 🔒 개인정보보호
+- **로컬 저장**: 모든 데이터는 사용자 기기에만 저장
+- **외부 전송 없음**: 서버로 데이터 전송하지 않음
+- **투명한 정책**: 상세한 개인정보 처리방침 제공
+- **Chrome 웹스토어 정책 준수**: 엄격한 보안 기준 충족
+
 ## 🚀 설치 방법
 
 ### Chrome 웹스토어에서 설치 (추천)
-*Chrome 웹스토어 등록 준비 중*
+*Chrome 웹스토어 등록 준비 완료 - 심사 대기 중*
+
+**웹스토어 정책 준수사항:**
+- ✅ 개인정보 처리방침 완비
+- ✅ 최소 권한 원칙 적용 (google.co.kr/maps/* 제한)
+- ✅ 로컬 저장 방식으로 데이터 보안 확보
+- ✅ 투명한 데이터 수집 정책
 
 ### 개발자 모드로 설치
 1. 이 저장소를 다운로드하거나 클론
@@ -113,6 +127,14 @@ CSV 파일로 내보내기 기능으로 편리한 사용 가능
 **개발자**: nap4595@gmail.com
 
 ## 🔄 업데이트 로그
+
+### v1.0.1 (2025-07-26)
+- 🔒 Chrome 웹스토어 정책 완전 준수
+- 📋 상세한 개인정보 처리방침 추가 (privacy.html)
+- 🛡️ Google Maps 권한을 korean.co.kr/maps/*로 제한
+- 🔗 팝업에 개인정보 처리방침 링크 추가
+- 🌏 구글지도 한국 도메인 최적화
+- 📝 확장프로그램 설명 개선
 
 ### v1.0 (2025-07-14)
 - ✨ CustomPlaceDB 브랜딩 완료
