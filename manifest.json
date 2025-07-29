@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "CustomPlaceDB",
+  "version": "1.1",
+  "description": "네이버지도, 카카오맵에서 장소를 저장하고 개인 맞춤 데이터베이스를 구축하세요. 모든 데이터는 로컬에 안전하게 저장됩니다.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://map.naver.com/*",
+    "https://pcmap.place.naver.com/*",
+    "https://map.kakao.com/*",
+    "https://place.map.kakao.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://map.naver.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://map.kakao.com/*", "https://place.map.kakao.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "CustomPlaceDB"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

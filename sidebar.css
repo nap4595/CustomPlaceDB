@@ -1,0 +1,626 @@
+
+/* 사이드바 메인 컨테이너 */
+#map-scraper-sidebar {
+  position: fixed;
+  bottom: 0;
+  right: 120px;
+  width: 400px;
+  height: 90vh;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px 0 0 0;
+  box-shadow: -4px -4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  transform: translateY(100%);
+  transition: 
+    transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1),
+    width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0.1s,
+    right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0.1s;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+#map-scraper-sidebar.open {
+  transform: translateY(0);
+}
+
+#map-scraper-sidebar.visible {
+  transform: translateY(0);
+}
+
+#map-scraper-sidebar:not(.visible) {
+  transform: translateY(calc(100% - 28px)); /* 헤더만 보이도록 */
+}
+
+
+/* 사이드바 헤더 */
+.map-sidebar-header {
+  padding: 4px 15px;
+  background-color: #000;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  min-height: 20px;
+  transition: all 0.3s ease-out;
+}
+
+/* 드래그 핸들 */
+.map-drag-handle {
+  flex: 1;
+  height: 100%;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.map-drag-handle::before {
+  content: '';
+  width: 30px;
+  height: 3px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 1.5px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease-out;
+}
+
+.map-drag-handle:active {
+  cursor: grabbing;
+}
+
+.map-toggle-visibility-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-out;
+}
+
+.map-toggle-visibility-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 숨김 상태에서 토글 버튼 다시 보이기 (제거) */
+
+/* 숨김 상태에서 사이드바 폭 줄이기 */
+#map-scraper-sidebar:not(.visible) {
+  width: 120px;
+  right: 180px; /* 120px + 60px 여백 = 180px */
+}
+
+/* 축소 시 더 빠른 애니메이션 */
+#map-scraper-sidebar.collapsing {
+  transition: 
+    transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+    width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+    right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* 숨김 상태에서 헤더 스타일 조정 */
+#map-scraper-sidebar:not(.visible) .map-sidebar-header {
+  padding: 4px 8px;
+  border-radius: 8px 8px 0 0;
+  justify-content: space-between;
+}
+
+/* 숨김 상태에서 드래그 핸들 스타일 */
+#map-scraper-sidebar:not(.visible) .map-drag-handle::before {
+  width: 30px;
+  height: 3px;
+  border-radius: 1.5px;
+}
+
+/* 목록 관리 영역 */
+.map-list-manager {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+/* 목록 표시 영역 */
+.map-list-display {
+  margin-bottom: 10px;
+}
+
+.map-list-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  background-color: white;
+  cursor: pointer;
+}
+
+.map-list-select:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+/* 목록 액션 버튼 영역 */
+.map-list-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.map-list-btn {
+  padding: 8px 6px;
+  border: 1px solid #000;
+  background-color: white;
+  color: #000;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.map-list-btn:hover {
+  background-color: #000;
+  color: white;
+}
+
+.map-add-current-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 10;
+  position: relative;
+  pointer-events: auto;
+}
+
+.map-add-current-btn:hover {
+  background-color: #333;
+}
+
+.map-add-current-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.map-add-current-btn:active {
+  transform: scale(0.98);
+}
+
+/* 장소 목록 영역 */
+.map-places-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.map-empty-state {
+  text-align: center;
+  color: #666;
+  padding: 40px 20px;
+}
+
+.map-empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.map-place-card {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.map-place-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.map-place-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.map-place-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333 !important;
+  margin: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.map-place-name:hover {
+  color: #222 !important;
+  text-decoration: underline;
+}
+
+.map-place-category {
+  font-size: 12px;
+  color: #666;
+  margin: 2px 0;
+}
+
+.map-place-rating {
+  font-size: 14px;
+  color: #ff6b35;
+  margin: 2px 0;
+}
+
+.map-place-rating::before {
+  content: "⭐ ";
+}
+
+.map-delete-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.map-delete-btn:hover {
+  background-color: #f0f0f0;
+  color: #e74c3c;
+}
+
+.map-memo-container {
+  margin-top: 10px;
+}
+
+.map-memo-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.map-memo-textarea:focus {
+  outline: none;
+  border-color: #000;
+}
+
+/* 커스텀 필드 스타일 */
+.map-custom-fields {
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.map-custom-field {
+  margin-bottom: 8px;
+}
+
+.map-custom-field:last-child {
+  margin-bottom: 0;
+}
+
+.map-custom-label {
+  display: block;
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.map-custom-input,
+.map-custom-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+.map-custom-input:focus,
+.map-custom-select:focus {
+  outline: none;
+  border-color: #000;
+}
+
+/* 모달 스타일 */
+.map-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 10003;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.map-modal-header {
+  padding: 20px;
+  background-color: #000;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.map-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.map-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.map-modal-body {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.map-fields-list {
+  margin-bottom: 20px;
+}
+
+.map-field-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+}
+
+.map-field-info {
+  flex: 1;
+}
+
+.map-field-name {
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.map-field-type {
+  font-size: 12px;
+  color: #666;
+  background-color: #e0e0e0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.map-field-options {
+  font-size: 11px;
+  color: #888;
+}
+
+.map-delete-field-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.map-delete-field-btn:hover {
+  background-color: #c0392b;
+}
+
+.map-add-field-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.map-add-field-btn:hover {
+  background-color: #333;
+}
+
+.map-no-fields {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  #map-scraper-sidebar {
+    width: 100%;
+  }
+  
+  #map-scraper-toggle {
+    right: 20px;
+    border-radius: 50%;
+    padding: 12px;
+    writing-mode: initial;
+  }
+  
+  .map-modal-content {
+    width: 95%;
+    margin: 0 auto;
+  }
+  
+  .map-field-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .map-delete-field-btn {
+    align-self: flex-end;
+  }
+  
+  .map-list-actions {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .map-list-btn {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}
+
+/* 입력 모달 스타일 */
+.map-input-field {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin: 10px 0;
+  box-sizing: border-box;
+}
+
+.map-input-field:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.map-modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 15px;
+}
+
+.map-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.map-btn-primary {
+  background-color: #000;
+  color: white;
+}
+
+.map-btn-primary:hover {
+  background-color: #333;
+}
+
+.map-btn-secondary {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.map-btn-secondary:hover {
+  background-color: #d0d0d0;
+}
+
+/* 플랫폼 뱃지 스타일 */
+.map-place-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.map-platform-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  min-width: 0;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+/* 플랫폼별 색상은 JavaScript에서 동적으로 설정됨 */
+.map-place-card[data-platform="naver"] .map-platform-badge {
+  background-color: #03c75a;
+}
+
+.map-place-card[data-platform="kakao"] .map-platform-badge {
+  background-color: #FFE300;
+  color: #333;
+  text-shadow: none;
+}
+
+.map-place-card[data-platform="google"] .map-platform-badge {
+  background-color: #007B8B;
+}
+
+/* 플랫폼 뱃지에 호버 효과 */
+.map-platform-badge:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
