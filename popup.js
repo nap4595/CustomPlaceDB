@@ -157,7 +157,7 @@ async function exportDataAsJSON() {
     
     const exportData = {
       exportDate: new Date().toISOString(),
-      version: '1.1.0',
+      version: '1.2.0',
       lists: data
     };
     
@@ -229,7 +229,7 @@ function generateCSVData(lists) {
       return;
     }
     
-    // 헤더 생성 (새로운 순서: 장소명 → 카테고리 → 별점 → 플랫폼 → 커스텀필드 → 메모 → URL)
+    // 헤더 생성 (새로운 순서: 장소명 → 카테고리 → 별점 → 플랫폼 → 커스텀필드 → URL)
     const headers = ['장소명', '카테고리', '별점', '플랫폼'];
     
     // 커스텀 필드 헤더 추가
@@ -239,7 +239,6 @@ function generateCSVData(lists) {
       });
     }
     
-    headers.push('메모');
     headers.push('URL');
     
     // 헤더 행 추가
@@ -262,7 +261,6 @@ function generateCSVData(lists) {
         });
       }
       
-      row.push(place.memo || '');
       row.push(place.url || ''); // URL을 마지막에 추가
       
       // CSV 형식으로 변환 (따옴표 처리)

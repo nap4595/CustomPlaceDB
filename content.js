@@ -82,8 +82,7 @@ class NaverMapExtractor extends BaseMapExtractor {
         category: placeInfo.category,
         rating: placeInfo.rating,
         url: window.location.href,
-        customValues: {},
-        memo: ''
+        customValues: {}
       };
     } catch (error) {
       console.error('네이버지도 데이터 추출 실패:', error);
@@ -195,8 +194,7 @@ class KakaoMapExtractor extends BaseMapExtractor {
         category: placeInfo.category,
         rating: placeInfo.rating,
         url: window.location.href,
-        customValues: {},
-        memo: ''
+        customValues: {}
       };
     } catch (error) {
       console.error('카카오맵 데이터 추출 실패:', error);
@@ -455,6 +453,38 @@ class MapScraper {
           </div>
         </div>
       </div>
+
+      <!-- 필드 타입 선택 모달 -->
+      <div class="map-modal" id="map-field-type-modal" style="display: none;">
+        <div class="map-modal-content">
+          <div class="map-modal-header">
+            <h3>필드 타입 선택</h3>
+            <button class="map-modal-close" id="map-field-type-modal-close">×</button>
+          </div>
+          <div class="map-modal-body">
+            <p>생성할 필드의 타입을 선택하세요:</p>
+            <div class="map-field-type-options">
+              <div class="map-field-type-option" data-type="text">
+                <div class="map-field-type-icon">📝</div>
+                <div class="map-field-type-info">
+                  <h4>텍스트형</h4>
+                  <p>자유롭게 텍스트를 입력할 수 있는 필드</p>
+                </div>
+              </div>
+              <div class="map-field-type-option" data-type="select">
+                <div class="map-field-type-icon">📋</div>
+                <div class="map-field-type-info">
+                  <h4>선택형</h4>
+                  <p>미리 정의된 옵션 중에서 선택하는 필드</p>
+                </div>
+              </div>
+            </div>
+            <div class="map-modal-buttons">
+              <button class="map-btn map-btn-secondary" id="map-field-type-cancel">취소</button>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -491,28 +521,22 @@ class MapScraper {
     const platformName = PlatformDetector.getPlatformDisplayName(platform);
     
     return `
-      <div class="map-place-card" data-place-id="${place.id}" data-platform="${platform}">
+      <div class="map-place-card" data-place-id="${place.id}" data-platform="${platform}" draggable="true">
         <div class="map-place-header">
-          <div>
-            <div class="map-place-title-row">
-              <h3 class="map-place-name" data-place-id="${place.id}" data-url="${place.url}">${place.name}</h3>
+          <div class="map-place-drag-handle">⋮⋮</div>
+          <div class="map-place-main-info">
+            <h3 class="map-place-name" data-place-id="${place.id}" data-url="${place.url}">${place.name}</h3>
+            <div class="map-place-meta">
+              <span class="map-place-category">${place.category}</span>
+              <span class="map-place-rating ${place.rating ? 'has-rating' : 'no-rating'}">
+                ${place.rating ? place.rating : '별점 정보 없음'}
+              </span>
               <span class="map-platform-badge" style="background-color: ${platformColor}">${platformName}</span>
-            </div>
-            <div class="map-place-category">${place.category}</div>
-            <div class="map-place-rating ${place.rating ? 'has-rating' : 'no-rating'}">
-              ${place.rating ? place.rating : '별점 정보 없음'}
             </div>
           </div>
           <button class="map-delete-btn" data-place-id="${place.id}">×</button>
         </div>
         ${this.renderCustomFields(place)}
-        <div class="map-memo-container">
-          <textarea 
-            class="map-memo-textarea" 
-            placeholder="메모를 입력하세요..."
-            data-place-id="${place.id}"
-          >${place.memo || ''}</textarea>
-        </div>
       </div>
     `;
   }
@@ -558,9 +582,10 @@ class MapScraper {
     }
   }
 
+
   renderSelectField(field, place, value) {
     return `
-      <div class="nmap-custom-field">
+      <div class="map-custom-field">
         <label class="map-custom-label">${field.name}</label>
         <select class="map-custom-select" data-place-id="${place.id}" data-field-name="${field.name}">
           <option value="">선택하세요</option>
@@ -574,7 +599,7 @@ class MapScraper {
 
   renderTextField(field, place, value) {
     return `
-      <div class="nmap-custom-field">
+      <div class="map-custom-field">
         <label class="map-custom-label">${field.name}</label>
         <input 
           type="text" 
@@ -641,9 +666,17 @@ class MapScraper {
     this.addEventListenerSafe('#map-places-container', 'click', (e) => this.handlePlacesContainerClick(e));
     this.addEventListenerSafe('#map-places-container', 'input', (e) => this.handlePlacesContainerInput(e));
     this.addEventListenerSafe('#map-places-container', 'change', (e) => this.handlePlacesContainerInput(e));
+    
+    // 장소 드래그 앤 드롭 설정
+    this.setupPlaceDragAndDrop();
   }
 
   handlePlacesContainerClick(e) {
+    // 드래그 핸들 클릭 시에는 다른 동작 수행하지 않음
+    if (e.target.classList.contains('map-place-drag-handle')) {
+      return;
+    }
+    
     if (e.target.classList.contains('map-delete-btn')) {
       const placeId = e.target.dataset.placeId;
       this.deletePlace(placeId);
@@ -667,10 +700,8 @@ class MapScraper {
   handlePlacesContainerInput(e) {
     const placeId = e.target.dataset.placeId;
     
-    if (e.target.classList.contains('map-memo-textarea')) {
-      this.saveMemo(placeId, e.target.value);
-    } else if (e.target.classList.contains('map-custom-input') || 
-               e.target.classList.contains('map-custom-select')) {
+    if (e.target.classList.contains('map-custom-input') || 
+        e.target.classList.contains('map-custom-select')) {
       const fieldName = e.target.dataset.fieldName;
       this.saveCustomValue(placeId, fieldName, e.target.value);
     }
@@ -686,6 +717,200 @@ class MapScraper {
     e.preventDefault();
     e.stopPropagation();
     this.addCurrentPlace();
+  }
+
+  setupPlaceDragAndDrop() {
+    const placesContainer = document.getElementById('map-places-container');
+    if (!placesContainer) return;
+
+    let draggedElement = null;
+    let draggedIndex = null;
+    let dropIndicator = null;
+
+    // 드롭 인디케이터 생성
+    const createDropIndicator = () => {
+      const indicator = document.createElement('div');
+      indicator.className = 'map-drop-indicator';
+      indicator.style.cssText = `
+        height: 3px;
+        background-color: #007bff;
+        border-radius: 2px;
+        margin: 4px 0;
+        opacity: 0.8;
+        box-shadow: 0 0 4px rgba(0, 123, 255, 0.5);
+        transition: all 0.2s ease;
+      `;
+      return indicator;
+    };
+
+    // 가장 가까운 장소 카드와 삽입 위치 찾기
+    const getClosestPlaceCard = (y) => {
+      const placeCards = Array.from(placesContainer.querySelectorAll('.map-place-card:not([style*="opacity: 0.5"])'));
+      
+      let closest = null;
+      let closestDistance = Infinity;
+      let insertAfter = false;
+
+      placeCards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const cardCenterY = rect.top + rect.height / 2;
+        const distance = Math.abs(y - cardCenterY);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closest = card;
+          insertAfter = y > cardCenterY;
+        }
+      });
+
+      return { closest, insertAfter };
+    };
+
+    // 드롭 인디케이터 위치 업데이트
+    const updateDropIndicator = (y) => {
+      if (!dropIndicator) {
+        dropIndicator = createDropIndicator();
+      }
+
+      const { closest, insertAfter } = getClosestPlaceCard(y);
+      
+      if (closest) {
+        // 기존 인디케이터 제거
+        const existingIndicator = placesContainer.querySelector('.map-drop-indicator');
+        if (existingIndicator) {
+          existingIndicator.remove();
+        }
+
+        // 새 위치에 인디케이터 삽입
+        if (insertAfter) {
+          closest.insertAdjacentElement('afterend', dropIndicator);
+        } else {
+          closest.insertAdjacentElement('beforebegin', dropIndicator);
+        }
+      }
+    };
+
+    // 드롭 인디케이터 제거
+    const removeDropIndicator = () => {
+      const indicator = placesContainer.querySelector('.map-drop-indicator');
+      if (indicator) {
+        indicator.remove();
+      }
+      dropIndicator = null;
+    };
+
+    placesContainer.addEventListener('dragstart', (e) => {
+      if (e.target.classList.contains('map-place-card')) {
+        draggedElement = e.target;
+        const placeId = e.target.dataset.placeId;
+        const currentList = this.getCurrentList();
+        if (currentList) {
+          draggedIndex = currentList.places.findIndex(p => p.id === placeId);
+        }
+        
+        e.target.style.opacity = '0.5';
+        e.target.style.transform = 'rotate(1deg)';
+        e.dataTransfer.effectAllowed = 'move';
+        
+        document.body.style.cursor = 'grabbing';
+      }
+    });
+
+    placesContainer.addEventListener('dragend', (e) => {
+      if (e.target.classList.contains('map-place-card')) {
+        e.target.style.opacity = '';
+        e.target.style.transform = '';
+        document.body.style.cursor = '';
+        removeDropIndicator();
+        draggedElement = null;
+        draggedIndex = null;
+      }
+    });
+
+    placesContainer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      if (draggedElement) {
+        updateDropIndicator(e.clientY);
+      }
+    });
+
+    placesContainer.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+    });
+
+    placesContainer.addEventListener('dragleave', (e) => {
+      // 컨테이너 영역을 완전히 벗어날 때만 인디케이터 제거
+      if (!placesContainer.contains(e.relatedTarget)) {
+        removeDropIndicator();
+      }
+    });
+
+    placesContainer.addEventListener('drop', (e) => {
+      e.preventDefault();
+      
+      if (!draggedElement || draggedIndex === null) return;
+
+      const { closest, insertAfter } = getClosestPlaceCard(e.clientY);
+      
+      if (closest) {
+        const targetPlaceId = closest.dataset.placeId;
+        const currentList = this.getCurrentList();
+        
+        if (currentList) {
+          const targetIndex = currentList.places.findIndex(p => p.id === targetPlaceId);
+          let newIndex = targetIndex;
+          
+          if (insertAfter) {
+            newIndex = targetIndex + 1;
+          }
+          
+          // 드래그한 요소가 목적지보다 위에 있으면 인덱스 조정
+          if (draggedIndex < newIndex) {
+            newIndex = newIndex - 1;
+          }
+          
+          // 같은 위치가 아닐 때만 순서 변경
+          if (newIndex !== draggedIndex) {
+            this.reorderPlaces(draggedIndex, newIndex);
+          }
+        }
+      }
+      
+      removeDropIndicator();
+    });
+  }
+
+  reorderPlaces(fromIndex, toIndex) {
+    const currentList = this.getCurrentList();
+    if (!currentList || !currentList.places) return;
+
+    const places = currentList.places;
+    
+    // 인덱스 유효성 검사
+    if (fromIndex < 0 || fromIndex >= places.length) {
+      console.error('유효하지 않은 fromIndex:', fromIndex);
+      return;
+    }
+    
+    // toIndex를 유효한 범위로 제한
+    toIndex = Math.max(0, Math.min(toIndex, places.length - 1));
+    
+    // 같은 위치면 변경하지 않음
+    if (fromIndex === toIndex) {
+      return;
+    }
+
+    console.log(`장소 순서 변경: ${fromIndex} -> ${toIndex}`);
+
+    // 배열에서 아이템을 이동
+    const movedPlace = places.splice(fromIndex, 1)[0];
+    places.splice(toIndex, 0, movedPlace);
+
+    // 데이터 저장 및 UI 업데이트
+    this.saveData();
+    this.updatePlacesContainer();
   }
 
   // ==================== 사이드바 조작 ====================
@@ -821,10 +1046,7 @@ class MapScraper {
     let selector;
     if (focusInfo.fieldName) {
       // 커스텀 필드
-      selector = `.nmap-custom-input[data-place-id="${focusInfo.placeId}"][data-field-name="${focusInfo.fieldName}"], .nmap-custom-select[data-place-id="${focusInfo.placeId}"][data-field-name="${focusInfo.fieldName}"]`;
-    } else if (focusInfo.className.includes('nmap-memo-textarea')) {
-      // 메모 텍스트 영역
-      selector = `.nmap-memo-textarea[data-place-id="${focusInfo.placeId}"]`;
+      selector = `.map-custom-input[data-place-id="${focusInfo.placeId}"][data-field-name="${focusInfo.fieldName}"], .map-custom-select[data-place-id="${focusInfo.placeId}"][data-field-name="${focusInfo.fieldName}"]`;
     }
     
     if (selector) {
@@ -846,7 +1068,12 @@ class MapScraper {
     const id = Date.now().toString();
     this.lists[id] = {
       name: name.trim(),
-      customFields: [],
+      customFields: [
+        {
+          name: 'memo',
+          type: 'text'
+        }
+      ],
       places: []
     };
     
@@ -953,7 +1180,12 @@ class MapScraper {
       const newListId = Date.now().toString();
       this.lists[newListId] = {
         name: '새 목록',
-        customFields: [],
+        customFields: [
+          {
+            name: 'memo',
+            type: 'text'
+          }
+        ],
         places: []
       };
       this.currentListId = newListId;
@@ -988,13 +1220,6 @@ class MapScraper {
     this.updatePlacesContainer();
   }
 
-  saveMemo(placeId, memo) {
-    const place = this.findPlaceById(placeId);
-    if (place) {
-      place.memo = memo;
-      this.debouncedSave(`memo_${placeId}`);
-    }
-  }
 
   saveCustomValue(placeId, fieldName, value) {
     const place = this.findPlaceById(placeId);
@@ -1160,19 +1385,219 @@ class MapScraper {
     });
     addFieldBtn.addEventListener('click', () => this.addCustomField());
     
-    // 이벤트 위임으로 삭제 버튼 처리
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'block') {
+        this.hideFieldsModal();
+      }
+    });
+    
+    // 이벤트 위임으로 수정/삭제 버튼 처리
     fieldsList.addEventListener('click', (e) => {
       if (e.target.classList.contains('map-delete-field-btn')) {
         e.stopPropagation();
         const fieldIndex = parseInt(e.target.dataset.fieldIndex);
         this.deleteCustomField(fieldIndex);
+      } else if (e.target.classList.contains('map-edit-field-btn')) {
+        e.stopPropagation();
+        const fieldIndex = parseInt(e.target.dataset.fieldIndex);
+        this.editCustomField(fieldIndex);
       }
     });
+    
+    // 드래그 앤 드롭 이벤트 처리
+    this.setupFieldDragAndDrop(fieldsList);
   }
 
   hideFieldsModal() {
     const modal = document.getElementById('map-fields-modal');
     modal.style.display = 'none';
+  }
+
+  setupFieldDragAndDrop(fieldsList) {
+    let draggedElement = null;
+    let draggedIndex = null;
+    let dropIndicator = null;
+
+    // 드롭 인디케이터 생성
+    const createDropIndicator = () => {
+      const indicator = document.createElement('div');
+      indicator.className = 'map-drop-indicator';
+      indicator.style.cssText = `
+        height: 3px;
+        background-color: #007bff;
+        border-radius: 2px;
+        margin: 2px 0;
+        opacity: 0.8;
+        box-shadow: 0 0 4px rgba(0, 123, 255, 0.5);
+        transition: all 0.2s ease;
+      `;
+      return indicator;
+    };
+
+    // 가장 가까운 필드 아이템과 삽입 위치 찾기
+    const getClosestFieldItem = (y) => {
+      const fieldItems = Array.from(fieldsList.querySelectorAll('.map-field-item:not([style*="opacity: 0.5"])'));
+      
+      let closest = null;
+      let closestDistance = Infinity;
+      let insertAfter = false;
+
+      fieldItems.forEach(item => {
+        const rect = item.getBoundingClientRect();
+        const itemCenterY = rect.top + rect.height / 2;
+        const distance = Math.abs(y - itemCenterY);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closest = item;
+          // 마우스가 아이템 중앙보다 아래에 있으면 아이템 다음에 삽입
+          insertAfter = y > itemCenterY;
+        }
+      });
+
+      return { closest, insertAfter };
+    };
+
+    // 드롭 인디케이터 위치 업데이트
+    const updateDropIndicator = (y) => {
+      if (!dropIndicator) {
+        dropIndicator = createDropIndicator();
+      }
+
+      const { closest, insertAfter } = getClosestFieldItem(y);
+      
+      if (closest) {
+        // 기존 인디케이터 제거
+        const existingIndicator = fieldsList.querySelector('.map-drop-indicator');
+        if (existingIndicator) {
+          existingIndicator.remove();
+        }
+
+        // 새 위치에 인디케이터 삽입
+        if (insertAfter) {
+          closest.insertAdjacentElement('afterend', dropIndicator);
+        } else {
+          closest.insertAdjacentElement('beforebegin', dropIndicator);
+        }
+      }
+    };
+
+    // 드롭 인디케이터 제거
+    const removeDropIndicator = () => {
+      const indicator = fieldsList.querySelector('.map-drop-indicator');
+      if (indicator) {
+        indicator.remove();
+      }
+      dropIndicator = null;
+    };
+
+    fieldsList.addEventListener('dragstart', (e) => {
+      if (e.target.classList.contains('map-field-item')) {
+        draggedElement = e.target;
+        draggedIndex = parseInt(e.target.dataset.fieldIndex);
+        e.target.style.opacity = '0.5';
+        e.target.style.transform = 'rotate(2deg)';
+        e.dataTransfer.effectAllowed = 'move';
+        
+        // 드래그 시작 시 커서 변경
+        document.body.style.cursor = 'grabbing';
+      }
+    });
+
+    fieldsList.addEventListener('dragend', (e) => {
+      if (e.target.classList.contains('map-field-item')) {
+        e.target.style.opacity = '';
+        e.target.style.transform = '';
+        document.body.style.cursor = '';
+        removeDropIndicator();
+        draggedElement = null;
+        draggedIndex = null;
+      }
+    });
+
+    // 전체 필드 리스트에서 dragover 처리 (넓은 드롭 영역)
+    fieldsList.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      if (draggedElement) {
+        updateDropIndicator(e.clientY);
+      }
+    });
+
+    fieldsList.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+    });
+
+    fieldsList.addEventListener('dragleave', (e) => {
+      // 필드 리스트 영역을 완전히 벗어날 때만 인디케이터 제거
+      if (!fieldsList.contains(e.relatedTarget)) {
+        removeDropIndicator();
+      }
+    });
+
+    fieldsList.addEventListener('drop', (e) => {
+      e.preventDefault();
+      
+      if (!draggedElement) return;
+
+      const { closest, insertAfter } = getClosestFieldItem(e.clientY);
+      
+      if (closest) {
+        const targetIndex = parseInt(closest.dataset.fieldIndex);
+        let newIndex = targetIndex;
+        
+        // 삽입 위치 계산
+        if (insertAfter) {
+          newIndex = targetIndex + 1;
+        }
+        
+        // 드래그한 요소가 목적지보다 위에 있으면 인덱스 조정
+        if (draggedIndex < newIndex) {
+          newIndex = newIndex - 1;
+        }
+        
+        // 같은 위치가 아닐 때만 순서 변경
+        if (newIndex !== draggedIndex) {
+          this.reorderCustomFields(draggedIndex, newIndex);
+        }
+      }
+      
+      removeDropIndicator();
+    });
+  }
+
+  reorderCustomFields(fromIndex, toIndex) {
+    const currentList = this.getCurrentList();
+    if (!currentList || !currentList.customFields) return;
+
+    const fields = currentList.customFields;
+    
+    // 인덱스 유효성 검사
+    if (fromIndex < 0 || fromIndex >= fields.length) {
+      console.error('유효하지 않은 fromIndex:', fromIndex);
+      return;
+    }
+    
+    // toIndex를 유효한 범위로 제한
+    toIndex = Math.max(0, Math.min(toIndex, fields.length - 1));
+    
+    // 같은 위치면 변경하지 않음
+    if (fromIndex === toIndex) {
+      return;
+    }
+
+    console.log(`필드 순서 변경: ${fromIndex} -> ${toIndex}`);
+
+    // 배열에서 아이템을 이동
+    const movedField = fields.splice(fromIndex, 1)[0];
+    fields.splice(toIndex, 0, movedField);
+
+    // 데이터 저장 및 UI 업데이트
+    this.saveData();
+    this.renderFieldsList();
+    this.updatePlacesContainer(); // 장소 카드들의 커스텀 필드 순서도 업데이트
   }
 
   renderFieldsList() {
@@ -1185,7 +1610,7 @@ class MapScraper {
     }
     
     if (!currentList || !currentList.customFields?.length) {
-      fieldsList.innerHTML = '<p class="nmap-no-fields">설정된 커스텀 필드가 없습니다.</p>';
+      fieldsList.innerHTML = '<p class="map-no-fields">설정된 커스텀 필드가 없습니다.</p>';
       return;
     }
     
@@ -1205,13 +1630,19 @@ class MapScraper {
     const optionsText = field.type === 'select' && field.options ? `(${field.options.join(', ')})` : '';
     
     return `
-      <div class="map-field-item">
-        <div class="nmap-field-info">
-          <span class="nmap-field-name">${field.name}</span>
-          <span class="nmap-field-type">${typeText}</span>
-          ${optionsText ? `<span class="nmap-field-options">${optionsText}</span>` : ''}
+      <div class="map-field-item" draggable="true" data-field-index="${index}">
+        <div class="map-field-drag-handle">⋮⋮</div>
+        <div class="map-field-info">
+          <div class="map-field-name">${field.name}</div>
+          <div class="map-field-details">
+            <span class="map-field-type">${typeText}</span>
+            ${optionsText ? `<span class="map-field-options">${optionsText}</span>` : ''}
+          </div>
         </div>
-        <button class="map-delete-field-btn" data-field-index="${index}">삭제</button>
+        <div class="map-field-actions">
+          <button class="map-edit-field-btn" data-field-index="${index}">수정</button>
+          <button class="map-delete-field-btn" data-field-index="${index}">삭제</button>
+        </div>
       </div>
     `;
   }
@@ -1236,16 +1667,22 @@ class MapScraper {
     this.updatePlacesContainer();
   }
 
-  async getFieldDataFromUser() {
-    const name = await this.showInputModal('필드 추가', '필드 이름을 입력하세요:');
+  async getFieldDataFromUser(existingField = null) {
+    const isEdit = !!existingField;
+    const title = isEdit ? '필드 수정' : '필드 추가';
+    const defaultName = existingField?.name || '';
+    
+    const name = await this.showInputModal(title, '필드 이름을 입력하세요:', defaultName);
     if (!name?.trim()) return null;
 
-    const type = confirm('텍스트형 필드로 만드시겠습니까?\n(취소하면 선택형으로 생성됩니다)') ? 'text' : 'select';
+    const type = isEdit ? existingField.type : await this.showFieldTypeModal();
+    if (!type) return null;
     
     const field = { name: name.trim(), type };
     
     if (type === 'select') {
-      const options = await this.getSelectOptionsFromUser();
+      const defaultOptions = existingField?.options || [];
+      const options = await this.getSelectOptionsFromUser(defaultOptions);
       if (!options) return null;
       field.options = options;
     }
@@ -1253,10 +1690,65 @@ class MapScraper {
     return field;
   }
 
-  async getSelectOptionsFromUser() {
+  async showFieldTypeModal() {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('map-field-type-modal');
+      const closeBtn = document.getElementById('map-field-type-modal-close');
+      const cancelBtn = document.getElementById('map-field-type-cancel');
+      const options = modal.querySelectorAll('.map-field-type-option');
+
+      modal.style.display = 'block';
+
+      const cleanup = () => {
+        modal.style.display = 'none';
+        closeBtn.removeEventListener('click', onCancel);
+        cancelBtn.removeEventListener('click', onCancel);
+        modal.removeEventListener('click', onModalClick);
+        options.forEach(option => {
+          option.removeEventListener('click', onOptionClick);
+        });
+        document.removeEventListener('keydown', onKeydown);
+      };
+
+      const onCancel = () => {
+        cleanup();
+        resolve(null);
+      };
+
+      const onOptionClick = (e) => {
+        const type = e.currentTarget.dataset.type;
+        cleanup();
+        resolve(type);
+      };
+
+      const onModalClick = (e) => {
+        if (e.target === modal) {
+          onCancel();
+        }
+      };
+
+      const onKeydown = (e) => {
+        if (e.key === 'Escape') {
+          onCancel();
+        }
+      };
+
+      closeBtn.addEventListener('click', onCancel);
+      cancelBtn.addEventListener('click', onCancel);
+      modal.addEventListener('click', onModalClick);
+      options.forEach(option => {
+        option.addEventListener('click', onOptionClick);
+      });
+      document.addEventListener('keydown', onKeydown);
+    });
+  }
+
+  async getSelectOptionsFromUser(defaultOptions = []) {
+    const defaultValue = defaultOptions.length > 0 ? defaultOptions.join(', ') : '';
     const optionsStr = await this.showInputModal(
       '선택 옵션 설정', 
-      '선택 옵션들을 쉼표(,)로 구분해서 입력하세요:\n예: O,X 또는 좋음,보통,나쁨'
+      '선택 옵션들을 쉼표(,)로 구분해서 입력하세요:\n예: O,X 또는 좋음,보통,나쁨',
+      defaultValue
     );
     if (!optionsStr) return null;
     
@@ -1269,8 +1761,51 @@ class MapScraper {
     return options;
   }
 
-  isFieldNameExists(list, fieldName) {
-    return list.customFields.some(f => f.name === fieldName);
+  async editCustomField(fieldIndex) {
+    const currentList = this.getCurrentList();
+    
+    if (!currentList || !currentList.customFields || fieldIndex >= currentList.customFields.length) {
+      console.error('유효하지 않은 필드 인덱스:', fieldIndex);
+      return;
+    }
+
+    const existingField = currentList.customFields[fieldIndex];
+    const fieldData = await this.getFieldDataFromUser(existingField);
+    if (!fieldData) return;
+
+    // 이름이 바뀌었는지 확인하고 중복 검사
+    if (fieldData.name !== existingField.name && this.isFieldNameExists(currentList, fieldData.name, fieldIndex)) {
+      alert('이미 존재하는 필드 이름입니다.');
+      return;
+    }
+
+    // 기존 필드 데이터를 새 데이터로 업데이트
+    const oldFieldName = existingField.name;
+    currentList.customFields[fieldIndex] = fieldData;
+
+    // 필드 이름이 바뀌었다면 모든 장소의 커스텀 값도 업데이트
+    if (fieldData.name !== oldFieldName) {
+      this.updateFieldNameInAllPlaces(currentList, oldFieldName, fieldData.name);
+    }
+
+    this.saveData();
+    this.renderFieldsList();
+    this.updatePlacesContainer();
+  }
+
+  updateFieldNameInAllPlaces(list, oldFieldName, newFieldName) {
+    list.places.forEach(place => {
+      if (place.customValues && place.customValues[oldFieldName] !== undefined) {
+        place.customValues[newFieldName] = place.customValues[oldFieldName];
+        delete place.customValues[oldFieldName];
+      }
+    });
+  }
+
+  isFieldNameExists(list, fieldName, excludeIndex = -1) {
+    return list.customFields.some((f, index) => {
+      return f.name === fieldName && index !== excludeIndex;
+    });
   }
 
   deleteCustomField(fieldIndex) {
