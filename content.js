@@ -219,8 +219,8 @@ class KakaoMapExtractor extends BaseMapExtractor {
     const categoryElement = document.querySelector('.info_cate');
     const category = categoryElement ? categoryElement.textContent.replace('장소 카테고리', '').trim() : null;
     
-    // 별점: <span class="num_star">4.6</span>
-    const ratingElement = document.querySelector('.num_star');
+    // 별점: div.unit_info > a.link_info > span.starred_grade > span.num_star
+    const ratingElement = document.querySelector('div.unit_info > a.link_info > span.starred_grade > span.num_star');
     const rating = ratingElement ? parseFloat(ratingElement.textContent) : null;
     
     return {
@@ -499,7 +499,9 @@ class MapScraper {
               <span class="map-platform-badge" style="background-color: ${platformColor}">${platformName}</span>
             </div>
             <div class="map-place-category">${place.category}</div>
-            ${place.rating ? `<div class="map-place-rating">${place.rating}</div>` : ''}
+            <div class="map-place-rating ${place.rating ? 'has-rating' : 'no-rating'}">
+              ${place.rating ? place.rating : '별점 정보 없음'}
+            </div>
           </div>
           <button class="map-delete-btn" data-place-id="${place.id}">×</button>
         </div>

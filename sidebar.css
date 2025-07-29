@@ -270,12 +270,25 @@
 
 .map-place-rating {
   font-size: 14px;
-  color: #ff6b35;
   margin: 2px 0;
 }
 
-.map-place-rating::before {
+.map-place-rating.has-rating {
+  color: #ff6b35;
+}
+
+.map-place-rating.has-rating::before {
   content: "⭐ ";
+}
+
+.map-place-rating.no-rating {
+  color: #999;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.map-place-rating.no-rating::before {
+  content: "ℹ️ ";
 }
 
 .map-delete-btn {
