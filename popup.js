@@ -174,7 +174,7 @@ async function exportDataAsJSON() {
     
     const exportData = {
       exportDate: new Date().toISOString(),
-      version: '1.2.0',
+      version: '1.3.0',
       lists: data
     };
     
