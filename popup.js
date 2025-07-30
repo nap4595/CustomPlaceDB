@@ -1,3 +1,20 @@
+// 설정 상수
+const CONFIG = {
+  STORAGE_KEYS: {
+    MAIN_DATA: 'mapScraperData'
+  }
+};
+
+// 디버그 모드 설정
+const DEBUG_MODE = false; // 프로덕션에서는 false
+
+// 로깅 유틸리티
+const Logger = {
+  log: (...args) => DEBUG_MODE && console.log('[CustomPlaceDB Popup]', ...args),
+  error: (...args) => console.error('[CustomPlaceDB Popup Error]', ...args),
+  warn: (...args) => DEBUG_MODE && console.warn('[CustomPlaceDB Popup Warning]', ...args)
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStats();
   setupEventListeners();
@@ -7,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadStats() {
   try {
     const result = await chrome.storage.local.get(['mapScraperData']);
-    const data = result.mapScraperData || {};
+    const data = result[CONFIG.STORAGE_KEYS.MAIN_DATA] || {};
     
     const listCount = Object.keys(data).length;
     const placeCount = Object.values(data).reduce((total, list) => {
@@ -17,7 +34,7 @@ async function loadStats() {
     document.getElementById('list-count').textContent = listCount;
     document.getElementById('place-count').textContent = placeCount;
   } catch (error) {
-    console.error('통계 로드 실패:', error);
+    Logger.error('통계 로드 실패:', error);
   }
 }
 
@@ -74,7 +91,7 @@ async function checkNaverMapTab() {
       };
     }
   } catch (error) {
-    console.error('네이버 지도 탭 확인 실패:', error);
+    Logger.error('네이버 지도 탭 확인 실패:', error);
   }
 }
 
@@ -148,7 +165,7 @@ function hideImportModal() {
 async function exportDataAsJSON() {
   try {
     const result = await chrome.storage.local.get(['mapScraperData']);
-    const data = result.mapScraperData || {};
+    const data = result[CONFIG.STORAGE_KEYS.MAIN_DATA] || {};
     
     if (Object.keys(data).length === 0) {
       alert('내보낼 데이터가 없습니다.');
@@ -157,7 +174,7 @@ async function exportDataAsJSON() {
     
     const exportData = {
       exportDate: new Date().toISOString(),
-      version: '1.2.0',
+      version: '1.3.0',
       lists: data
     };
     
@@ -183,7 +200,7 @@ async function exportDataAsJSON() {
 async function exportDataAsCSV() {
   try {
     const result = await chrome.storage.local.get(['mapScraperData']);
-    const data = result.mapScraperData || {};
+    const data = result[CONFIG.STORAGE_KEYS.MAIN_DATA] || {};
     
     if (Object.keys(data).length === 0) {
       alert('내보낼 데이터가 없습니다.');

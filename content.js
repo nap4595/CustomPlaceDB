@@ -1,5 +1,48 @@
 // 지도 장소 스크랩 Content Script
 
+// 설정 상수
+const CONFIG = {
+  PLATFORMS: {
+    NAVER: 'naver',
+    KAKAO: 'kakao',
+    UNKNOWN: 'unknown'
+  },
+  PLATFORM_COLORS: {
+    naver: '#03c75a',
+    kakao: '#FFE300',
+    default: '#666666'
+  },
+  PLATFORM_NAMES: {
+    naver: '네이버지도',
+    kakao: '카카오맵'
+  },
+  UI: {
+    SIDEBAR_WIDTH: 400,
+    SIDEBAR_HEIGHT: '90vh',
+    SIDEBAR_RIGHT_OFFSET: 120,
+    ANIMATION_DURATION: 500,
+    DEBOUNCE_DELAY: 1000,
+    Z_INDEX: 10000
+  },
+  STORAGE_KEYS: {
+    MAIN_DATA: 'mapScraperData'
+  },
+  DEFAULT_FIELD: {
+    name: 'memo',
+    type: 'text'
+  }
+};
+
+// 디버그 모드 설정 (프로덕션에서는 false로 설정)
+const DEBUG_MODE = false;
+
+// 로깅 유틸리티
+const Logger = {
+  log: (...args) => DEBUG_MODE && console.log('[CustomPlaceDB]', ...args),
+  error: (...args) => console.error('[CustomPlaceDB Error]', ...args),
+  warn: (...args) => DEBUG_MODE && console.warn('[CustomPlaceDB Warning]', ...args)
+};
+
 // 플랫폼 감지 클래스
 class PlatformDetector {
   static detectCurrentPlatform() {
@@ -7,32 +50,24 @@ class PlatformDetector {
     const pathname = window.location.pathname;
     
     if (hostname.includes('naver.com') && (pathname.includes('/map') || hostname.includes('map.naver.com'))) {
-      return 'naver';
+      return CONFIG.PLATFORMS.NAVER;
     } else if (hostname.includes('kakao.com')) {
-      return 'kakao';
+      return CONFIG.PLATFORMS.KAKAO;
     }
     
-    return 'unknown';
+    return CONFIG.PLATFORMS.UNKNOWN;
   }
   
   static getSupportedPlatforms() {
-    return ['naver', 'kakao'];
+    return [CONFIG.PLATFORMS.NAVER, CONFIG.PLATFORMS.KAKAO];
   }
   
   static getPlatformDisplayName(platform) {
-    const displayNames = {
-      'naver': '네이버지도',
-      'kakao': '카카오맵'
-    };
-    return displayNames[platform] || platform;
+    return CONFIG.PLATFORM_NAMES[platform] || platform;
   }
   
   static getPlatformColor(platform) {
-    const colors = {
-      'naver': '#03c75a',
-      'kakao': '#FFE300'
-    };
-    return colors[platform] || '#666666';
+    return CONFIG.PLATFORM_COLORS[platform] || CONFIG.PLATFORM_COLORS.default;
   }
 }
 
@@ -85,7 +120,7 @@ class NaverMapExtractor extends BaseMapExtractor {
         customValues: {}
       };
     } catch (error) {
-      console.error('네이버지도 데이터 추출 실패:', error);
+      Logger.error('네이버지도 데이터 추출 실패:', error);
       return null;
     }
   }
@@ -108,7 +143,7 @@ class NaverMapExtractor extends BaseMapExtractor {
       }
       return null;
     } catch (error) {
-      console.error('네이버지도 API 요청 실패:', error);
+      Logger.error('네이버지도 API 요청 실패:', error);
       return null;
     }
   }
@@ -162,7 +197,7 @@ class ExtractorFactory {
       case 'kakao':
         return new KakaoMapExtractor();
       default:
-        console.log('지원하지 않는 플랫폼입니다:', targetPlatform);
+        Logger.warn('지원하지 않는 플랫폼입니다:', targetPlatform);
         return null;
     }
   }
@@ -197,7 +232,7 @@ class KakaoMapExtractor extends BaseMapExtractor {
         customValues: {}
       };
     } catch (error) {
-      console.error('카카오맵 데이터 추출 실패:', error);
+      Logger.error('카카오맵 데이터 추출 실패:', error);
       return null;
     }
   }
@@ -253,26 +288,26 @@ class MapScraper {
   // ==================== 데이터 관리 ====================
   async loadData() {
     try {
-      const result = await chrome.storage.local.get(['mapScraperData']);
-      if (result.mapScraperData) {
-        this.lists = result.mapScraperData;
+      const result = await chrome.storage.local.get([CONFIG.STORAGE_KEYS.MAIN_DATA]);
+      if (result[CONFIG.STORAGE_KEYS.MAIN_DATA]) {
+        this.lists = result[CONFIG.STORAGE_KEYS.MAIN_DATA];
         
         // 기존 목록이 있다면 첫 번째 목록을 현재 목록으로 설정
         const listIds = Object.keys(this.lists);
         if (listIds.length > 0) {
           this.currentListId = listIds[0];
-          console.log('첫 번째 목록 로드:', this.currentListId, this.lists[this.currentListId].name);
+          Logger.log('첫 번째 목록 로드:', this.currentListId, this.lists[this.currentListId].name);
         } else {
           this.currentListId = null;
-          console.log('저장된 목록이 없습니다.');
+          Logger.log('저장된 목록이 없습니다.');
         }
       } else {
         this.lists = {};
         this.currentListId = null;
-        console.log('초기 상태: 목록이 없습니다.');
+        Logger.log('초기 상태: 목록이 없습니다.');
       }
     } catch (error) {
-      console.error('데이터 로드 실패:', error);
+      Logger.error('데이터 로드 실패:', error);
       this.lists = {};
       this.currentListId = null;
     }
@@ -281,7 +316,7 @@ class MapScraper {
   async saveData() {
     try {
       this.isSelfUpdate = true; // 자체 업데이트 플래그 설정
-      await chrome.storage.local.set({ mapScraperData: this.lists });
+      await chrome.storage.local.set({ [CONFIG.STORAGE_KEYS.MAIN_DATA]: this.lists });
       
       // Promise를 사용한 더 안전한 플래그 해제
       await new Promise(resolve => {
@@ -291,7 +326,7 @@ class MapScraper {
         }, 100);
       });
     } catch (error) {
-      console.error('데이터 저장 실패:', error);
+      Logger.error('데이터 저장 실패:', error);
       this.isSelfUpdate = false;
     }
   }
@@ -300,7 +335,7 @@ class MapScraper {
     const platform = PlatformDetector.detectCurrentPlatform();
     const color = PlatformDetector.getPlatformColor(platform);
     
-    console.log(`${platform} 플랫폼 색상 적용:`, color);
+    Logger.log(`${platform} 플랫폼 색상 적용:`, color);
     
     // CSS 커스텀 속성으로 플랫폼 색상 설정
     document.documentElement.style.setProperty('--platform-color', color);
@@ -713,7 +748,7 @@ class MapScraper {
   }
 
   handleAddCurrentPlace(e) {
-    console.log('현재 장소 추가 버튼 클릭됨');
+    Logger.log('현재 장소 추가 버튼 클릭됨');
     e.preventDefault();
     e.stopPropagation();
     this.addCurrentPlace();
@@ -890,7 +925,7 @@ class MapScraper {
     
     // 인덱스 유효성 검사
     if (fromIndex < 0 || fromIndex >= places.length) {
-      console.error('유효하지 않은 fromIndex:', fromIndex);
+      Logger.error('유효하지 않은 fromIndex:', fromIndex);
       return;
     }
     
@@ -902,7 +937,7 @@ class MapScraper {
       return;
     }
 
-    console.log(`장소 순서 변경: ${fromIndex} -> ${toIndex}`);
+    Logger.log(`장소 순서 변경: ${fromIndex} -> ${toIndex}`);
 
     // 배열에서 아이템을 이동
     const movedPlace = places.splice(fromIndex, 1)[0];
@@ -1070,8 +1105,8 @@ class MapScraper {
       name: name.trim(),
       customFields: [
         {
-          name: 'memo',
-          type: 'text'
+          name: CONFIG.DEFAULT_FIELD.name,
+          type: CONFIG.DEFAULT_FIELD.type
         }
       ],
       places: []
@@ -1139,11 +1174,11 @@ class MapScraper {
 
   // ==================== 장소 관리 ====================
   async addCurrentPlace() {
-    console.log('addCurrentPlace 함수 실행됨');
+    Logger.log('addCurrentPlace 함수 실행됨');
     
     try {
       const currentPlatform = PlatformDetector.detectCurrentPlatform();
-      console.log('감지된 플랫폼:', currentPlatform);
+      Logger.log('감지된 플랫폼:', currentPlatform);
       
       const extractor = ExtractorFactory.getExtractor(currentPlatform);
       if (!extractor) {
@@ -1157,7 +1192,7 @@ class MapScraper {
       }
       
       const placeData = await extractor.extractPlaceData();
-      console.log('추출된 장소 데이터:', placeData);
+      Logger.log('추출된 장소 데이터:', placeData);
       
       if (placeData) {
         this.addPlace(placeData);
@@ -1165,7 +1200,7 @@ class MapScraper {
         alert('장소 정보를 가져오는 중 문제가 발생했습니다.');
       }
     } catch (error) {
-      console.error('장소 추가 중 오류:', error);
+      Logger.error('장소 추가 중 오류:', error);
       alert('장소 정보를 가져오는 중 오류가 발생했습니다.');
     }
   }
@@ -1176,7 +1211,7 @@ class MapScraper {
     
     // 목록이 없으면 기본 목록 자동 생성
     if (!currentList) {
-      console.log('목록이 없어서 새 목록을 생성합니다.');
+      Logger.log('목록이 없어서 새 목록을 생성합니다.');
       const newListId = Date.now().toString();
       this.lists[newListId] = {
         name: '새 목록',
@@ -1576,7 +1611,7 @@ class MapScraper {
     
     // 인덱스 유효성 검사
     if (fromIndex < 0 || fromIndex >= fields.length) {
-      console.error('유효하지 않은 fromIndex:', fromIndex);
+      Logger.error('유효하지 않은 fromIndex:', fromIndex);
       return;
     }
     
@@ -1588,7 +1623,7 @@ class MapScraper {
       return;
     }
 
-    console.log(`필드 순서 변경: ${fromIndex} -> ${toIndex}`);
+    Logger.log(`필드 순서 변경: ${fromIndex} -> ${toIndex}`);
 
     // 배열에서 아이템을 이동
     const movedField = fields.splice(fromIndex, 1)[0];
@@ -1605,7 +1640,7 @@ class MapScraper {
     const fieldsList = document.getElementById('map-fields-list');
     
     if (!fieldsList) {
-      console.error('필드 목록 요소를 찾을 수 없습니다.');
+      Logger.error('필드 목록 요소를 찾을 수 없습니다.');
       return;
     }
     
@@ -1622,7 +1657,7 @@ class MapScraper {
 
   renderFieldItem(field, index) {
     if (!field || !field.name) {
-      console.error('유효하지 않은 필드 데이터:', field);
+      Logger.error('유효하지 않은 필드 데이터:', field);
       return '';
     }
     
@@ -1765,7 +1800,7 @@ class MapScraper {
     const currentList = this.getCurrentList();
     
     if (!currentList || !currentList.customFields || fieldIndex >= currentList.customFields.length) {
-      console.error('유효하지 않은 필드 인덱스:', fieldIndex);
+      Logger.error('유효하지 않은 필드 인덱스:', fieldIndex);
       return;
     }
 
@@ -1818,7 +1853,7 @@ class MapScraper {
     }
     
     if (fieldIndex < 0 || fieldIndex >= currentList.customFields.length) {
-      console.error('유효하지 않은 필드 인덱스:', fieldIndex);
+      Logger.error('유효하지 않은 필드 인덱스:', fieldIndex);
       return;
     }
     
