@@ -222,6 +222,8 @@ const updatePlacesContainer = (currentList) => {
   const container = document.getElementById('map-places-container');
   if (container) {
     container.innerHTML = renderPlaces(currentList);
+    setupPlaceDragAndDrop();
+    setupPlaceEventListeners();
   }
 };
 
@@ -236,8 +238,11 @@ const updateFieldsList = (customFields) => {
   
   fieldsList.innerHTML = customFields
     .filter(field => field?.name)
-    .map(renderFieldItem)
+    .map((field, index) => renderFieldItem(field, index))
     .join('');
+    
+  setupFieldsDragAndDrop();
+  setupFieldsEventListeners();
 };
 
 // ==================== 이벤트 핸들러들 ====================
@@ -400,6 +405,10 @@ const setupFieldsModalEventListeners = () => {
 };
 
 const addCustomField = async () => {
+  // 먼저 필드 타입 선택
+  const fieldType = await showFieldTypeModal();
+  if (!fieldType) return;
+  
   const fieldName = await showInputModal('새 필드 추가', '필드 이름을 입력하세요:');
   if (!fieldName?.trim()) return;
   
@@ -416,8 +425,15 @@ const addCustomField = async () => {
   
   const fieldData = {
     name: fieldName.trim(),
-    type: 'text'
+    type: fieldType
   };
+  
+  // 선택형 필드인 경우 옵션 설정
+  if (fieldType === 'select') {
+    const options = await showInputModal('선택 옵션 설정', '옵션을 쉼표(,)로 구분하여 입력하세요:');
+    if (!options?.trim()) return;
+    fieldData.options = options.split(',').map(opt => opt.trim()).filter(opt => opt);
+  }
   
   currentList.customFields.push(fieldData);
   await saveData();
@@ -462,6 +478,242 @@ const showInputModal = async (title, message, defaultValue = '') => {
     confirmBtn.addEventListener('click', onConfirm);
     cancelBtn.addEventListener('click', onCancel);
     closeBtn.addEventListener('click', onCancel);
+  });
+};
+
+const showFieldTypeModal = async () => {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('map-field-type-modal');
+    const closeBtn = document.getElementById('map-field-type-modal-close');
+    const cancelBtn = document.getElementById('map-field-type-cancel');
+    const typeOptions = modal.querySelectorAll('.map-field-type-option');
+
+    modal.style.display = 'block';
+
+    const cleanup = () => {
+      modal.style.display = 'none';
+      closeBtn.removeEventListener('click', onCancel);
+      cancelBtn.removeEventListener('click', onCancel);
+      typeOptions.forEach(option => {
+        option.removeEventListener('click', onTypeSelect);
+      });
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    const onTypeSelect = (e) => {
+      const option = e.currentTarget;
+      const type = option.getAttribute('data-type');
+      cleanup();
+      resolve(type);
+    };
+
+    closeBtn.addEventListener('click', onCancel);
+    cancelBtn.addEventListener('click', onCancel);
+    typeOptions.forEach(option => {
+      option.addEventListener('click', onTypeSelect);
+    });
+
+    // ESC 키로 모달 닫기
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', onKeyDown);
+        onCancel();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+  });
+};
+
+const setupPlaceDragAndDrop = () => {
+  const placeCards = document.querySelectorAll('.map-place-card');
+  let draggedElement = null;
+
+  placeCards.forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      draggedElement = card;
+      card.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    card.addEventListener('dragend', () => {
+      if (draggedElement) {
+        draggedElement.style.opacity = '';
+        draggedElement = null;
+      }
+    });
+
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    card.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      if (!draggedElement || draggedElement === card) return;
+
+      const currentList = state.lists[state.currentListId];
+      if (!currentList?.places) return;
+
+      const draggedId = draggedElement.getAttribute('data-place-id');
+      const targetId = card.getAttribute('data-place-id');
+
+      const draggedIndex = currentList.places.findIndex(p => p.id === draggedId);
+      const targetIndex = currentList.places.findIndex(p => p.id === targetId);
+
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        // 배열에서 순서 변경
+        const [draggedPlace] = currentList.places.splice(draggedIndex, 1);
+        currentList.places.splice(targetIndex, 0, draggedPlace);
+
+        await saveData();
+        updatePlacesContainer(currentList);
+      }
+    });
+  });
+};
+
+const setupPlaceEventListeners = () => {
+  // 장소 이름 클릭 이벤트
+  document.querySelectorAll('.map-place-name').forEach(nameEl => {
+    nameEl.addEventListener('click', (e) => {
+      const url = e.target.getAttribute('data-url');
+      if (url) {
+        chrome.tabs.create({ url });
+      }
+    });
+  });
+
+  // 삭제 버튼 이벤트
+  document.querySelectorAll('.map-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const placeId = e.target.getAttribute('data-place-id');
+      await handleDeletePlace(placeId);
+    });
+  });
+
+  // 커스텀 필드 입력 이벤트
+  document.querySelectorAll('.map-custom-input').forEach(input => {
+    input.addEventListener('change', async (e) => {
+      const placeId = e.target.getAttribute('data-place-id');
+      const fieldName = e.target.getAttribute('data-field-name');
+      const value = e.target.value;
+
+      const currentList = state.lists[state.currentListId];
+      if (currentList) {
+        const place = currentList.places.find(p => p.id === placeId);
+        if (place) {
+          if (!place.customValues) place.customValues = {};
+          place.customValues[fieldName] = value;
+          await saveData();
+        }
+      }
+    });
+  });
+
+  // 커스텀 필드 선택 이벤트
+  document.querySelectorAll('.map-custom-select').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const placeId = e.target.getAttribute('data-place-id');
+      const fieldName = e.target.getAttribute('data-field-name');
+      const value = e.target.value;
+
+      const currentList = state.lists[state.currentListId];
+      if (currentList) {
+        const place = currentList.places.find(p => p.id === placeId);
+        if (place) {
+          if (!place.customValues) place.customValues = {};
+          place.customValues[fieldName] = value;
+          await saveData();
+        }
+      }
+    });
+  });
+};
+
+const setupFieldsDragAndDrop = () => {
+  const fieldItems = document.querySelectorAll('.map-field-item');
+  let draggedElement = null;
+
+  fieldItems.forEach(item => {
+    item.addEventListener('dragstart', (e) => {
+      draggedElement = item;
+      item.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      if (draggedElement) {
+        draggedElement.style.opacity = '';
+        draggedElement = null;
+      }
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    item.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      if (!draggedElement || draggedElement === item) return;
+
+      const currentList = state.lists[state.currentListId];
+      if (!currentList?.customFields) return;
+
+      const draggedIndex = parseInt(draggedElement.getAttribute('data-field-index'));
+      const targetIndex = parseInt(item.getAttribute('data-field-index'));
+
+      if (!isNaN(draggedIndex) && !isNaN(targetIndex) && draggedIndex !== targetIndex) {
+        // 배열에서 순서 변경
+        const [draggedField] = currentList.customFields.splice(draggedIndex, 1);
+        currentList.customFields.splice(targetIndex, 0, draggedField);
+
+        await saveData();
+        updateFieldsList(currentList.customFields);
+        updatePlacesContainer(currentList);
+      }
+    });
+  });
+};
+
+const setupFieldsEventListeners = () => {
+  // 필드 수정 버튼 이벤트
+  document.querySelectorAll('.map-edit-field-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const index = parseInt(e.target.getAttribute('data-field-index'));
+      const currentList = state.lists[state.currentListId];
+      if (!currentList?.customFields?.[index]) return;
+
+      const field = currentList.customFields[index];
+      const newName = await showInputModal('필드 이름 변경', '새 필드 이름을 입력하세요:', field.name);
+      if (!newName?.trim()) return;
+
+      field.name = newName.trim();
+      await saveData();
+      updateFieldsList(currentList.customFields);
+      updatePlacesContainer(currentList);
+    });
+  });
+
+  // 필드 삭제 버튼 이벤트
+  document.querySelectorAll('.map-delete-field-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const index = parseInt(e.target.getAttribute('data-field-index'));
+      const currentList = state.lists[state.currentListId];
+      if (!currentList?.customFields?.[index]) return;
+
+      const field = currentList.customFields[index];
+      if (!confirm(`'${field.name}' 필드를 삭제하시겠습니까?`)) return;
+
+      currentList.customFields.splice(index, 1);
+      await saveData();
+      updateFieldsList(currentList.customFields);
+      updatePlacesContainer(currentList);
+    });
   });
 };
 
