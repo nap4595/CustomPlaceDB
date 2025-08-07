@@ -167,6 +167,22 @@ body {
   border-color: #A6B28B;
 }
 
+/* 드래그 앤 드롭 시각적 피드백 */
+.map-place-card.dragging {
+  transform: rotate(2deg);
+  z-index: 1000;
+}
+
+.map-place-card.drag-over-top {
+  border-top: 3px solid #1C352D;
+  box-shadow: 0 -2px 8px rgba(28, 53, 45, 0.3);
+}
+
+.map-place-card.drag-over-bottom {
+  border-bottom: 3px solid #1C352D;
+  box-shadow: 0 2px 8px rgba(28, 53, 45, 0.3);
+}
+
 .map-place-card:active {
   cursor: grabbing;
 }
@@ -412,6 +428,22 @@ body {
 
 .map-field-item:active {
   cursor: grabbing;
+}
+
+/* 필드 드래그 앤 드롭 시각적 피드백 */
+.map-field-item.dragging {
+  transform: rotate(1deg);
+  z-index: 1000;
+}
+
+.map-field-item.drag-over-top {
+  border-top: 3px solid #1C352D;
+  box-shadow: 0 -2px 8px rgba(28, 53, 45, 0.3);
+}
+
+.map-field-item.drag-over-bottom {
+  border-bottom: 3px solid #1C352D;
+  box-shadow: 0 2px 8px rgba(28, 53, 45, 0.3);
 }
 
 .map-field-drag-handle {

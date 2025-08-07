@@ -251,8 +251,8 @@ const handleSettingsClick = () => {
   chrome.windows.create({
     url: chrome.runtime.getURL('popup.html'),
     type: 'popup',
-    width: 350,
-    height: 600,
+    width: 650,
+    height: 450,
     focused: true
   });
 };
@@ -536,19 +536,51 @@ const setupPlaceDragAndDrop = () => {
     card.addEventListener('dragstart', (e) => {
       draggedElement = card;
       card.style.opacity = '0.5';
+      card.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
     });
 
     card.addEventListener('dragend', () => {
       if (draggedElement) {
         draggedElement.style.opacity = '';
+        draggedElement.classList.remove('dragging');
         draggedElement = null;
       }
+      // 모든 드롭 인디케이터 제거
+      document.querySelectorAll('.map-place-card').forEach(c => {
+        c.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
     });
 
     card.addEventListener('dragover', (e) => {
       e.preventDefault();
+      if (!draggedElement || draggedElement === card) return;
+      
       e.dataTransfer.dropEffect = 'move';
+      
+      // 드롭 위치 시각적 표시
+      const rect = card.getBoundingClientRect();
+      const mouseY = e.clientY;
+      const cardMiddle = rect.top + rect.height / 2;
+      
+      // 모든 카드에서 drag-over 클래스 제거
+      document.querySelectorAll('.map-place-card').forEach(c => {
+        c.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      
+      // 마우스 위치에 따라 위/아래 표시
+      if (mouseY < cardMiddle) {
+        card.classList.add('drag-over-top');
+      } else {
+        card.classList.add('drag-over-bottom');
+      }
+    });
+
+    card.addEventListener('dragleave', (e) => {
+      // 카드 영역을 완전히 벗어났을 때만 제거
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('drag-over-top', 'drag-over-bottom');
+      }
     });
 
     card.addEventListener('drop', async (e) => {
@@ -565,9 +597,16 @@ const setupPlaceDragAndDrop = () => {
       const targetIndex = currentList.places.findIndex(p => p.id === targetId);
 
       if (draggedIndex !== -1 && targetIndex !== -1) {
+        // 드롭 위치 계산 (위/아래)
+        const rect = card.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const cardMiddle = rect.top + rect.height / 2;
+        const insertIndex = mouseY < cardMiddle ? targetIndex : targetIndex + 1;
+
         // 배열에서 순서 변경
         const [draggedPlace] = currentList.places.splice(draggedIndex, 1);
-        currentList.places.splice(targetIndex, 0, draggedPlace);
+        const adjustedIndex = draggedIndex < insertIndex ? insertIndex - 1 : insertIndex;
+        currentList.places.splice(adjustedIndex, 0, draggedPlace);
 
         await saveData();
         updatePlacesContainer(currentList);
@@ -642,19 +681,51 @@ const setupFieldsDragAndDrop = () => {
     item.addEventListener('dragstart', (e) => {
       draggedElement = item;
       item.style.opacity = '0.5';
+      item.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
     });
 
     item.addEventListener('dragend', () => {
       if (draggedElement) {
         draggedElement.style.opacity = '';
+        draggedElement.classList.remove('dragging');
         draggedElement = null;
       }
+      // 모든 드롭 인디케이터 제거
+      document.querySelectorAll('.map-field-item').forEach(i => {
+        i.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
     });
 
     item.addEventListener('dragover', (e) => {
       e.preventDefault();
+      if (!draggedElement || draggedElement === item) return;
+      
       e.dataTransfer.dropEffect = 'move';
+      
+      // 드롭 위치 시각적 표시
+      const rect = item.getBoundingClientRect();
+      const mouseY = e.clientY;
+      const itemMiddle = rect.top + rect.height / 2;
+      
+      // 모든 아이템에서 drag-over 클래스 제거
+      document.querySelectorAll('.map-field-item').forEach(i => {
+        i.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      
+      // 마우스 위치에 따라 위/아래 표시
+      if (mouseY < itemMiddle) {
+        item.classList.add('drag-over-top');
+      } else {
+        item.classList.add('drag-over-bottom');
+      }
+    });
+
+    item.addEventListener('dragleave', (e) => {
+      // 아이템 영역을 완전히 벗어났을 때만 제거
+      if (!item.contains(e.relatedTarget)) {
+        item.classList.remove('drag-over-top', 'drag-over-bottom');
+      }
     });
 
     item.addEventListener('drop', async (e) => {
@@ -668,9 +739,16 @@ const setupFieldsDragAndDrop = () => {
       const targetIndex = parseInt(item.getAttribute('data-field-index'));
 
       if (!isNaN(draggedIndex) && !isNaN(targetIndex) && draggedIndex !== targetIndex) {
+        // 드롭 위치 계산 (위/아래)
+        const rect = item.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const itemMiddle = rect.top + rect.height / 2;
+        const insertIndex = mouseY < itemMiddle ? targetIndex : targetIndex + 1;
+
         // 배열에서 순서 변경
         const [draggedField] = currentList.customFields.splice(draggedIndex, 1);
-        currentList.customFields.splice(targetIndex, 0, draggedField);
+        const adjustedIndex = draggedIndex < insertIndex ? insertIndex - 1 : insertIndex;
+        currentList.customFields.splice(adjustedIndex, 0, draggedField);
 
         await saveData();
         updateFieldsList(currentList.customFields);
