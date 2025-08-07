@@ -14,10 +14,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // ==================== Side Panel 관리 ====================
-chrome.action.onClicked.addListener(async (tab) => {
-  // Side Panel 토글 (자동으로 처리됨)
-  console.log('Side Panel 토글');
-});
+// Side Panel은 setPanelBehavior({ openPanelOnActionClick: true })로 자동 처리됨
 
 // 키보드 단축키 처리
 chrome.commands.onCommand.addListener(async (command) => {
@@ -173,14 +170,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     
     if (isMapSite) {
       console.log('지도 페이지가 로드되었습니다:', tab.url);
-      
-      // 해당 탭에서 Side Panel 활성화
-      chrome.sidePanel.setOptions({
-        tabId: tabId,
-        enabled: true
-      }).catch(error => {
-        console.error('Side Panel 활성화 실패:', error);
-      });
+      // Side Panel은 manifest.json의 side_panel.default_path 설정으로 모든 탭에서 사용 가능
     }
   }
 });

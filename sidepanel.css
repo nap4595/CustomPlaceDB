@@ -22,27 +22,13 @@ body {
   position: relative;
 }
 
-/* 드래그 핸들 */
-.map-drag-handle {
+/* 사이드바 제목 */
+.map-sidebar-title {
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0;
   flex: 1;
-  height: 100%;
-  cursor: grab;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.map-drag-handle::before {
-  content: '';
-  width: 30px;
-  height: 3px;
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: 1.5px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.map-drag-handle:active {
-  cursor: grabbing;
 }
 
 /* 설정 버튼 */
@@ -66,24 +52,6 @@ body {
   transform: scale(1.1);
 }
 
-.map-toggle-visibility-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 3px;
-  min-width: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.map-toggle-visibility-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
 
 /* 목록 관리 영역 */
 .map-list-manager {

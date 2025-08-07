@@ -355,6 +355,76 @@ const showNotification = (message, type = 'info') => {
 };
 
 // ==================== 모달 관리 ====================
+const showFieldsModal = () => {
+  const modal = document.getElementById('map-fields-modal');
+  if (!modal) return;
+  
+  const currentList = state.lists[state.currentListId];
+  if (!currentList) return;
+  
+  // 필드 목록 렌더링
+  updateFieldsList(currentList.customFields);
+  modal.style.display = 'block';
+  
+  // 모달 이벤트 리스너 설정 (한 번만)
+  if (!state.fieldsModalInitialized) {
+    setupFieldsModalEventListeners();
+    state.fieldsModalInitialized = true;
+  }
+};
+
+const hideFieldsModal = () => {
+  const modal = document.getElementById('map-fields-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+};
+
+const setupFieldsModalEventListeners = () => {
+  const modal = document.getElementById('map-fields-modal');
+  const closeBtn = document.getElementById('map-fields-modal-close');
+  const addFieldBtn = document.getElementById('map-add-field-btn');
+  
+  closeBtn?.addEventListener('click', hideFieldsModal);
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) hideFieldsModal();
+  });
+  addFieldBtn?.addEventListener('click', addCustomField);
+  
+  // ESC 키로 모달 닫기
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.style.display === 'block') {
+      hideFieldsModal();
+    }
+  });
+};
+
+const addCustomField = async () => {
+  const fieldName = await showInputModal('새 필드 추가', '필드 이름을 입력하세요:');
+  if (!fieldName?.trim()) return;
+  
+  const currentList = state.lists[state.currentListId];
+  if (!currentList.customFields) {
+    currentList.customFields = [];
+  }
+  
+  // 중복 필드명 검사
+  if (currentList.customFields.some(f => f.name === fieldName.trim())) {
+    alert('이미 존재하는 필드 이름입니다.');
+    return;
+  }
+  
+  const fieldData = {
+    name: fieldName.trim(),
+    type: 'text'
+  };
+  
+  currentList.customFields.push(fieldData);
+  await saveData();
+  updateFieldsList(currentList.customFields);
+  updatePlacesContainer(currentList);
+};
+
 const showInputModal = async (title, message, defaultValue = '') => {
   return new Promise((resolve) => {
     const modal = document.getElementById('map-input-modal');
@@ -421,6 +491,68 @@ const setupEventListeners = () => {
       updateListSelect(state.lists, state.currentListId);
       updatePlacesContainer(state.lists[id]);
     }
+  });
+  
+  // 목록 수정
+  document.getElementById('map-edit-list-btn')?.addEventListener('click', async () => {
+    if (!state.currentListId) {
+      alert('편집할 목록이 없습니다.');
+      return;
+    }
+    
+    const currentList = state.lists[state.currentListId];
+    if (!currentList) {
+      alert('목록을 찾을 수 없습니다.');
+      return;
+    }
+    
+    const newName = await showInputModal('목록 이름 변경', '새로운 목록 이름을 입력하세요:', currentList.name);
+    if (!newName?.trim()) return;
+    
+    const trimmedName = newName.trim();
+    
+    // 중복 이름 검사
+    const isDuplicate = Object.entries(state.lists).some(([id, list]) => 
+      id !== state.currentListId && list.name === trimmedName
+    );
+    
+    if (isDuplicate) {
+      alert('이미 존재하는 목록 이름입니다.');
+      return;
+    }
+    
+    currentList.name = trimmedName;
+    await saveData();
+    updateListSelect(state.lists, state.currentListId);
+  });
+  
+  // 목록 삭제
+  document.getElementById('map-delete-list-btn')?.addEventListener('click', async () => {
+    if (!state.currentListId) {
+      alert('삭제할 목록이 없습니다.');
+      return;
+    }
+    
+    if (!confirm('정말로 이 목록을 삭제하시겠습니까?')) return;
+
+    delete state.lists[state.currentListId];
+    
+    // 남은 목록이 있으면 첫 번째 목록으로 이동, 없으면 null
+    const remainingListIds = Object.keys(state.lists);
+    state.currentListId = remainingListIds.length > 0 ? remainingListIds[0] : null;
+    
+    await saveData();
+    updateListSelect(state.lists, state.currentListId);
+    updatePlacesContainer(state.lists[state.currentListId]);
+  });
+  
+  // 필드 관리
+  document.getElementById('map-manage-fields-btn')?.addEventListener('click', () => {
+    if (!state.currentListId) {
+      alert('필드를 관리할 목록이 없습니다.');
+      return;
+    }
+    showFieldsModal();
   });
   
   // 장소 컨테이너 이벤트 위임
