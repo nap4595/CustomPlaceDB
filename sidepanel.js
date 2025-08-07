@@ -1,0 +1,469 @@
+// Side Panel 스크립트 - 함수형 프로그래밍 방식
+
+// ==================== 상수 및 유틸리티 ====================
+const PLATFORM_COLORS = {
+  'naver': '#03c75a',
+  'kakao': '#FFE300',
+  'google': '#007B8B'
+};
+
+const PLATFORM_NAMES = {
+  'naver': '네이버지도',
+  'kakao': '카카오맵',
+  'google': '구글맵'
+};
+
+// 함수형 유틸리티
+const pipe = (...fns) => (value) => fns.reduce((acc, fn) => fn(acc), value);
+const curry = (fn) => (...args) => args.length >= fn.length ? fn(...args) : (...nextArgs) => curry(fn)(...args, ...nextArgs);
+const compose = (...fns) => (value) => fns.reduceRight((acc, fn) => fn(acc), value);
+
+// 안전한 객체 접근
+const safeGet = curry((path, obj) => {
+  const keys = path.split('.');
+  return keys.reduce((current, key) => current?.[key], obj);
+});
+
+// HTML 이스케이프
+const escapeHtml = (text) => {
+  if (typeof text !== 'string') return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+};
+
+// 디바운스 함수
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  };
+};
+
+// ==================== 상태 관리 ====================
+const createState = () => ({
+  lists: {},
+  currentListId: null,
+  eventListeners: new Map(),
+  saveTimeouts: new Map(),
+  fieldsModalInitialized: false
+});
+
+let state = createState();
+
+// 상태 업데이트 함수들
+const updateLists = (newLists) => ({ ...state, lists: newLists });
+const updateCurrentListId = (id) => ({ ...state, currentListId: id });
+
+// ==================== 데이터 관리 (순수 함수) ====================
+const loadStorageData = async () => {
+  try {
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    return result.mapScraperData || {};
+  } catch (error) {
+    console.error('데이터 로드 실패:', error);
+    return {};
+  }
+};
+
+const saveStorageData = async (data) => {
+  try {
+    await chrome.storage.local.set({ mapScraperData: data });
+    return { success: true };
+  } catch (error) {
+    console.error('데이터 저장 실패:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// ==================== 렌더링 함수들 (순수 함수) ====================
+const renderListOptions = (lists, currentListId) => {
+  if (!lists || Object.keys(lists).length === 0) {
+    return '<option value="">목록이 없습니다</option>';
+  }
+  
+  return Object.entries(lists)
+    .map(([id, list]) => 
+      `<option value="${id}" ${id === currentListId ? 'selected' : ''}>${escapeHtml(list.name)}</option>`
+    )
+    .join('');
+};
+
+const renderCustomField = (field, place) => {
+  const value = safeGet(`customValues.${field.name}`, place) || '';
+  
+  if (field.type === 'select') {
+    return renderSelectField(field, place, value);
+  }
+  return renderTextField(field, place, value);
+};
+
+const renderSelectField = (field, place, value) => `
+  <div class="map-custom-field">
+    <label class="map-custom-label">${escapeHtml(field.name)}</label>
+    <select class="map-custom-select" data-place-id="${place.id}" data-field-name="${field.name}">
+      <option value="">선택하세요</option>
+      ${field.options.map(option => 
+        `<option value="${escapeHtml(option)}" ${value === option ? 'selected' : ''}>${escapeHtml(option)}</option>`
+      ).join('')}
+    </select>
+  </div>
+`;
+
+const renderTextField = (field, place, value) => `
+  <div class="map-custom-field">
+    <label class="map-custom-label">${escapeHtml(field.name)}</label>
+    <input 
+      type="text" 
+      class="map-custom-input" 
+      data-place-id="${place.id}" 
+      data-field-name="${field.name}"
+      value="${escapeHtml(value)}"
+      placeholder="${escapeHtml(field.name)}을 입력하세요"
+    />
+  </div>
+`;
+
+const renderCustomFields = (place, customFields) => {
+  if (!customFields?.length) return '';
+  
+  return `
+    <div class="map-custom-fields">
+      ${customFields.map(field => renderCustomField(field, place)).join('')}
+    </div>
+  `;
+};
+
+const renderPlaceCard = (place, customFields) => {
+  const platform = place.platform || 'naver';
+  const platformColor = PLATFORM_COLORS[platform] || '#666666';
+  const platformName = PLATFORM_NAMES[platform] || platform;
+  
+  return `
+    <div class="map-place-card" data-place-id="${place.id}" data-platform="${platform}" draggable="true">
+      <div class="map-place-header">
+        <div class="map-place-drag-handle">⋮⋮</div>
+        <div class="map-place-main-info">
+          <h3 class="map-place-name" data-place-id="${place.id}" data-url="${place.url}">${escapeHtml(place.name)}</h3>
+          <div class="map-place-meta">
+            <span class="map-place-category">${escapeHtml(place.category)}</span>
+            <span class="map-place-rating ${place.rating ? 'has-rating' : 'no-rating'}">
+              ${place.rating || '별점 정보 없음'}
+            </span>
+            <span class="map-platform-badge" style="background-color: ${platformColor}">${platformName}</span>
+          </div>
+        </div>
+        <button class="map-delete-btn" data-place-id="${place.id}">×</button>
+      </div>
+      ${renderCustomFields(place, customFields)}
+    </div>
+  `;
+};
+
+const renderPlaces = (currentList) => {
+  if (!currentList) {
+    return `
+      <div class="map-empty-state">
+        <p>저장된 목록이 없습니다.</p>
+        <p>새 목록을 추가하거나 장소를 추가해보세요!</p>
+      </div>
+    `;
+  }
+  
+  if (!currentList.places?.length) {
+    return `
+      <div class="map-empty-state">
+        <p>저장된 장소가 없습니다.</p>
+        <p>지도에서 장소를 클릭하고 추가해보세요!</p>
+      </div>
+    `;
+  }
+
+  return currentList.places
+    .map(place => renderPlaceCard(place, currentList.customFields))
+    .join('');
+};
+
+const renderFieldItem = (field, index) => {
+  if (!field?.name) return '';
+  
+  const typeText = field.type === 'select' ? '선택형' : '텍스트형';
+  const optionsText = field.type === 'select' && field.options ? 
+    `(${field.options.join(', ')})` : '';
+  
+  return `
+    <div class="map-field-item" draggable="true" data-field-index="${index}">
+      <div class="map-field-drag-handle">⋮⋮</div>
+      <div class="map-field-info">
+        <div class="map-field-name">${escapeHtml(field.name)}</div>
+        <div class="map-field-details">
+          <span class="map-field-type">${typeText}</span>
+          ${optionsText ? `<span class="map-field-options">${escapeHtml(optionsText)}</span>` : ''}
+        </div>
+      </div>
+      <div class="map-field-actions">
+        <button class="map-edit-field-btn" data-field-index="${index}">수정</button>
+        <button class="map-delete-field-btn" data-field-index="${index}">삭제</button>
+      </div>
+    </div>
+  `;
+};
+
+// ==================== DOM 업데이트 함수들 ====================
+const updateListSelect = (lists, currentListId) => {
+  const select = document.getElementById('map-list-select');
+  if (select) {
+    select.innerHTML = renderListOptions(lists, currentListId);
+  }
+};
+
+const updatePlacesContainer = (currentList) => {
+  const container = document.getElementById('map-places-container');
+  if (container) {
+    container.innerHTML = renderPlaces(currentList);
+  }
+};
+
+const updateFieldsList = (customFields) => {
+  const fieldsList = document.getElementById('map-fields-list');
+  if (!fieldsList) return;
+  
+  if (!customFields?.length) {
+    fieldsList.innerHTML = '<p class="map-no-fields">설정된 커스텀 필드가 없습니다.</p>';
+    return;
+  }
+  
+  fieldsList.innerHTML = customFields
+    .filter(field => field?.name)
+    .map(renderFieldItem)
+    .join('');
+};
+
+// ==================== 이벤트 핸들러들 ====================
+const handleSettingsClick = () => {
+  // popup.html을 새 창으로 열기
+  chrome.windows.create({
+    url: chrome.runtime.getURL('popup.html'),
+    type: 'popup',
+    width: 350,
+    height: 600,
+    focused: true
+  });
+};
+
+const handleListChange = async (e) => {
+  state.currentListId = e.target.value;
+  const currentList = state.lists[state.currentListId];
+  updatePlacesContainer(currentList);
+};
+
+const handleAddCurrentPlace = async () => {
+  // content script에 현재 장소 데이터 요청
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  
+  try {
+    const response = await chrome.tabs.sendMessage(tab.id, { 
+      action: 'getCurrentPlaceData' 
+    });
+    
+    if (response?.success && response.placeData) {
+      await addPlace(response.placeData);
+    } else {
+      showNotification('현재 선택된 장소 정보를 찾을 수 없습니다.', 'error');
+    }
+  } catch (error) {
+    console.error('장소 추가 실패:', error);
+    showNotification('장소 정보를 가져오는 중 오류가 발생했습니다.', 'error');
+  }
+};
+
+const handleDeletePlace = async (placeId) => {
+  if (!confirm('이 장소를 삭제하시겠습니까?')) return;
+
+  const currentList = state.lists[state.currentListId];
+  if (currentList) {
+    currentList.places = currentList.places.filter(p => p.id !== placeId);
+    await saveData();
+    updatePlacesContainer(currentList);
+  }
+};
+
+const handleCustomFieldChange = debounce(async (placeId, fieldName, value) => {
+  const currentList = state.lists[state.currentListId];
+  if (!currentList) return;
+  
+  const place = currentList.places.find(p => p.id === placeId);
+  if (place) {
+    if (!place.customValues) place.customValues = {};
+    place.customValues[fieldName] = value;
+    await saveData();
+  }
+}, 500);
+
+// ==================== 비즈니스 로직 함수들 ====================
+const loadData = async () => {
+  const data = await loadStorageData();
+  state.lists = data;
+  
+  // 첫 번째 목록을 현재 목록으로 설정
+  const listIds = Object.keys(data);
+  state.currentListId = listIds.length > 0 ? listIds[0] : null;
+};
+
+const saveData = async () => {
+  return await saveStorageData(state.lists);
+};
+
+const addPlace = async (placeData) => {
+  let currentList = state.lists[state.currentListId];
+  
+  // 목록이 없으면 새 목록 생성
+  if (!currentList) {
+    const newListId = Date.now().toString();
+    state.lists[newListId] = {
+      name: '새 목록',
+      customFields: [{ name: 'memo', type: 'text' }],
+      places: []
+    };
+    state.currentListId = newListId;
+    currentList = state.lists[newListId];
+    updateListSelect(state.lists, state.currentListId);
+  }
+  
+  // 중복 체크
+  if (currentList.places.some(p => p.id === placeData.id)) {
+    showNotification('이미 저장된 장소입니다.', 'warning');
+    return;
+  }
+
+  currentList.places.push(placeData);
+  await saveData();
+  updatePlacesContainer(currentList);
+  showNotification('장소가 저장되었습니다!', 'success');
+};
+
+const showNotification = (message, type = 'info') => {
+  if (chrome.notifications) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: 'CustomPlaceDB',
+      message: message
+    });
+  }
+};
+
+// ==================== 모달 관리 ====================
+const showInputModal = async (title, message, defaultValue = '') => {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('map-input-modal');
+    const titleEl = document.getElementById('map-input-modal-title');
+    const messageEl = document.getElementById('map-input-modal-message');
+    const inputEl = document.getElementById('map-input-modal-input');
+    const confirmBtn = document.getElementById('map-input-modal-confirm');
+    const cancelBtn = document.getElementById('map-input-modal-cancel');
+    const closeBtn = document.getElementById('map-input-modal-close');
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    inputEl.value = defaultValue;
+    modal.style.display = 'block';
+    inputEl.focus();
+
+    const cleanup = () => {
+      modal.style.display = 'none';
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+    };
+
+    const onConfirm = () => {
+      const value = inputEl.value.trim();
+      cleanup();
+      resolve(value || null);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+  });
+};
+
+// ==================== 이벤트 리스너 설정 ====================
+const setupEventListeners = () => {
+  // 설정 버튼
+  document.getElementById('map-settings-btn')?.addEventListener('click', handleSettingsClick);
+  
+  // 목록 선택
+  document.getElementById('map-list-select')?.addEventListener('change', handleListChange);
+  
+  // 현재 장소 추가
+  document.getElementById('map-add-current-btn')?.addEventListener('click', handleAddCurrentPlace);
+  
+  // 목록 관리 버튼들
+  document.getElementById('map-add-list-btn')?.addEventListener('click', async () => {
+    const name = await showInputModal('새 목록 추가', '새 목록 이름을 입력하세요:');
+    if (name) {
+      const id = Date.now().toString();
+      state.lists[id] = {
+        name: name,
+        customFields: [{ name: 'memo', type: 'text' }],
+        places: []
+      };
+      await saveData();
+      state.currentListId = id;
+      updateListSelect(state.lists, state.currentListId);
+      updatePlacesContainer(state.lists[id]);
+    }
+  });
+  
+  // 장소 컨테이너 이벤트 위임
+  document.getElementById('map-places-container')?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('map-delete-btn')) {
+      const placeId = e.target.dataset.placeId;
+      handleDeletePlace(placeId);
+    } else if (e.target.classList.contains('map-place-name')) {
+      const url = e.target.dataset.url;
+      if (url) {
+        chrome.tabs.create({ url });
+      }
+    }
+  });
+  
+  // 커스텀 필드 변경 이벤트 위임
+  document.getElementById('map-places-container')?.addEventListener('input', (e) => {
+    if (e.target.classList.contains('map-custom-input') || 
+        e.target.classList.contains('map-custom-select')) {
+      const placeId = e.target.dataset.placeId;
+      const fieldName = e.target.dataset.fieldName;
+      handleCustomFieldChange(placeId, fieldName, e.target.value);
+    }
+  });
+};
+
+// ==================== 초기화 ====================
+const init = async () => {
+  await loadData();
+  
+  // UI 업데이트
+  updateListSelect(state.lists, state.currentListId);
+  updatePlacesContainer(state.lists[state.currentListId]);
+  
+  // 이벤트 리스너 설정
+  setupEventListeners();
+  
+  console.log('Side Panel 초기화 완료');
+};
+
+// DOM 로드 완료 후 초기화
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
