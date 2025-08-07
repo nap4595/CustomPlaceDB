@@ -5,7 +5,11 @@
   "description": "네이버지도, 카카오맵에서 장소를 저장하고 개인 맞춤 데이터베이스를 구축하세요. 모든 데이터는 로컬에 안전하게 저장됩니다.",
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "sidePanel",
+    "notifications",
+    "contextMenus",
+    "activeTab"
   ],
   "host_permissions": [
     "https://map.naver.com/*",
@@ -17,13 +21,11 @@
     {
       "matches": ["https://map.naver.com/*"],
       "js": ["content.js"],
-      "css": ["sidebar.css"],
       "run_at": "document_end"
     },
     {
       "matches": ["https://map.kakao.com/*", "https://place.map.kakao.com/*"],
       "js": ["content.js"],
-      "css": ["sidebar.css"],
       "run_at": "document_end"
     }
   ],
@@ -31,8 +33,18 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_title": "CustomPlaceDB"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "commands": {
+    "toggle-side-panel": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+P"
+      },
+      "description": "사이드 패널 토글"
+    }
   },
   "icons": {
     "16": "icons/icon16.png",
