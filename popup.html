@@ -5,6 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CustomPlaceDB - 설정</title>
     <style>
+        :root {
+            /* 테마1 색상 */
+            --theme1-main-bg: #3E3F29;
+            --theme1-main-bg-rgb: 62, 63, 41;
+            --theme1-sub-bg: #F8F7F3;
+            --theme1-accent: #BCA88D;
+            --theme1-border: #7D8D86;
+            
+            /* 테마2 색상 (기본) */
+            --theme2-main-bg: #1C352D;
+            --theme2-main-bg-rgb: 28, 53, 45;
+            --theme2-sub-bg: #F9F6F3;
+            --theme2-accent: #A6B28B;
+            --theme2-border: #F5C9B0;
+            
+            /* 테마3 색상 - 라임 그린 */
+            --theme3-main-bg: #8AA624;
+            --theme3-main-bg-rgb: 138, 166, 36;
+            --theme3-sub-bg: #FFFFF0;
+            --theme3-accent: #DBE4C9;
+            --theme3-border: #FEA405;
+            
+            /* 테마4 색상 - 퍼플 톤 */
+            --theme4-main-bg: #663399;
+            --theme4-main-bg-rgb: 102, 51, 153;
+            --theme4-sub-bg: #F8F4FF;
+            --theme4-accent: #9966CC;
+            --theme4-border: #D1C4E9;
+            
+            /* 테마5 색상 - 라벤더 블루 */
+            --theme5-main-bg: #5B6BC0;
+            --theme5-main-bg-rgb: 91, 107, 192;
+            --theme5-sub-bg: #E8EAF6;
+            --theme5-accent: #9FA8DA;
+            --theme5-border: #7986CB;
+            
+            /* 현재 사용 테마 (기본값: 테마1) */
+            --primary-color: var(--theme1-main-bg);
+            --primary-color-rgb: var(--theme1-main-bg-rgb);
+            --secondary-color: var(--theme1-sub-bg);
+            --accent-color: var(--theme1-accent);
+            --background-color: var(--theme1-border);
+            --text-color: #333;
+        }
+        
+        [data-theme="theme1"] {
+            --primary-color: var(--theme1-main-bg);
+            --primary-color-rgb: var(--theme1-main-bg-rgb);
+            --secondary-color: var(--theme1-sub-bg);
+            --accent-color: var(--theme1-accent);
+            --background-color: var(--theme1-border);
+            --text-color: #2c2c2c;
+        }
+        
+        [data-theme="theme2"] {
+            --primary-color: var(--theme2-main-bg);
+            --primary-color-rgb: var(--theme2-main-bg-rgb);
+            --secondary-color: var(--theme2-sub-bg);
+            --accent-color: var(--theme2-accent);
+            --background-color: var(--theme2-border);
+            --text-color: #333;
+        }
+        
+        [data-theme="theme3"] {
+            --primary-color: var(--theme3-main-bg);
+            --primary-color-rgb: var(--theme3-main-bg-rgb);
+            --secondary-color: var(--theme3-sub-bg);
+            --accent-color: var(--theme3-accent);
+            --background-color: var(--theme3-border);
+            --text-color: #2d4a0d;
+        }
+        
+        [data-theme="theme4"] {
+            --primary-color: var(--theme4-main-bg);
+            --primary-color-rgb: var(--theme4-main-bg-rgb);
+            --secondary-color: var(--theme4-sub-bg);
+            --accent-color: var(--theme4-accent);
+            --background-color: var(--theme4-border);
+            --text-color: #663399;
+        }
+        
+        [data-theme="theme5"] {
+            --primary-color: var(--theme5-main-bg);
+            --primary-color-rgb: var(--theme5-main-bg-rgb);
+            --secondary-color: var(--theme5-sub-bg);
+            --accent-color: var(--theme5-accent);
+            --background-color: var(--theme5-border);
+            --text-color: #3f4084;
+        }
+        
         body {
             width: 600px;
             min-height: 400px;
@@ -12,11 +102,11 @@
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #ffffff;
-            color: #333;
+            color: var(--text-color);
         }
         
         .header {
-            background: #1C352D;
+            background: var(--primary-color);
             color: white;
             padding: 20px;
             text-align: center;
@@ -55,23 +145,23 @@
         }
         
         .stat-card {
-            background: #F9F6F3;
+            background: var(--secondary-color);
             border-radius: 10px;
             padding: 16px;
             text-align: center;
-            border: 1px solid #F5C9B0;
+            border: 1px solid var(--background-color);
         }
         
         .stat-number {
             font-size: 24px;
             font-weight: 700;
-            color: #1C352D;
+            color: var(--primary-color);
             margin-bottom: 4px;
         }
         
         .stat-label {
             font-size: 12px;
-            color: #A6B28B;
+            color: var(--accent-color);
             font-weight: 500;
         }
         
@@ -83,7 +173,7 @@
             font-size: 16px;
             font-weight: 600;
             margin: 0 0 12px 0;
-            color: #1C352D;
+            color: var(--primary-color);
         }
         
         .quick-actions {
@@ -93,7 +183,7 @@
         
         .action-btn {
             padding: 12px 16px;
-            border: 1px solid #F5C9B0;
+            border: 1px solid var(--background-color);
             border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
@@ -102,23 +192,23 @@
             text-align: center;
             transition: all 0.2s ease;
             background: white;
-            color: #1C352D;
+            color: var(--primary-color);
         }
         
         .action-btn:hover {
-            background: #F9F6F3;
-            border-color: #A6B28B;
+            background: var(--secondary-color);
+            border-color: var(--accent-color);
             transform: translateY(-1px);
         }
         
         .action-btn.primary {
-            background: #1C352D;
+            background: var(--primary-color);
             color: white;
-            border-color: #1C352D;
+            border-color: var(--primary-color);
         }
         
         .action-btn.primary:hover {
-            background: #A6B28B;
+            background: var(--accent-color);
             transform: translateY(-1px);
         }
         
@@ -158,23 +248,23 @@
         }
         
         .info-box {
-            background: #F9F6F3;
+            background: var(--secondary-color);
             border-radius: 10px;
             padding: 16px;
-            border-left: 4px solid #1C352D;
+            border-left: 4px solid var(--primary-color);
             margin-bottom: 16px;
         }
         
         .info-box h3 {
             font-size: 14px;
             margin: 0 0 8px 0;
-            color: #1C352D;
+            color: var(--primary-color);
             font-weight: 600;
         }
         
         .info-box p {
             font-size: 13px;
-            color: #A6B28B;
+            color: var(--accent-color);
             margin: 0;
             line-height: 1.5;
         }
@@ -187,13 +277,13 @@
             display: flex;
             align-items: center;
             font-size: 12px;
-            color: #A6B28B;
+            color: var(--accent-color);
             margin: 4px 0;
         }
         
         .feature-item:before {
             content: "✓";
-            color: #1C352D;
+            color: var(--primary-color);
             font-weight: bold;
             margin-right: 8px;
         }
@@ -241,6 +331,56 @@
             flex-direction: column;
             gap: 8px;
         }
+        
+        /* 테마 선택기 스타일 */
+        .theme-selector-container {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .theme-selector-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .theme-selector {
+            padding: 10px 12px;
+            border: 1px solid var(--background-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-selector:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+        }
+        
+        .theme-preview {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .theme-color-box {
+            flex: 1;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-color-box:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -267,6 +407,26 @@
                 <div class="map-links">
                     <button class="action-btn naver-btn" id="open-naver-map">네이버지도</button>
                     <button class="action-btn kakao-btn" id="open-kakao-map">카카오맵</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">테마 설정</h2>
+                <div class="theme-selector-container">
+                    <label for="theme-select" class="theme-selector-label">테마 선택:</label>
+                    <select id="theme-select" class="theme-selector">
+                        <option value="theme1" selected>테마 1 - 올리브 그린</option>
+                        <option value="theme2">테마 2 - 포레스트 그린</option>
+                        <option value="theme3">테마 3 - 스프링 라임</option>
+                        <option value="theme4">테마 4 - 바이올렛 퍼플</option>
+                        <option value="theme5">테마 5 - 라벤더 블루</option>
+                    </select>
+                </div>
+                <div class="theme-preview" id="theme-preview">
+                    <div class="theme-color-box" id="main-bg-preview"></div>
+                    <div class="theme-color-box" id="sub-bg-preview"></div>
+                    <div class="theme-color-box" id="accent-preview"></div>
+                    <div class="theme-color-box" id="border-preview"></div>
                 </div>
             </div>
 

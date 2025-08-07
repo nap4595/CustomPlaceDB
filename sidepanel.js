@@ -41,6 +41,100 @@ const debounce = (func, delay) => {
   };
 };
 
+// ==================== 테마 관리 ====================
+const THEME_STORAGE_KEY = 'customplacedb-theme';
+
+const THEME_COLORS = {
+  theme1: { main: '#3E3F29', sub: '#F8F7F3', accent: '#BCA88D', border: '#7D8D86' },
+  theme2: { main: '#1C352D', sub: '#F9F6F3', accent: '#A6B28B', border: '#F5C9B0' },
+  theme3: { main: '#8AA624', sub: '#FFFFF0', accent: '#DBE4C9', border: '#FEA405' },
+  theme4: { main: '#663399', sub: '#F8F4FF', accent: '#9966CC', border: '#D1C4E9' },
+  theme5: { main: '#5B6BC0', sub: '#E8EAF6', accent: '#9FA8DA', border: '#7986CB' }
+};
+
+const themeManager = {
+  getCurrentTheme() {
+    return localStorage.getItem(THEME_STORAGE_KEY) || 'theme1';
+  },
+  
+  setTheme(theme) {
+    if (!THEME_COLORS[theme]) {
+      console.warn(`Unknown theme: ${theme}`);
+      return false;
+    }
+    
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    
+    // 테마 적용 검증
+    setTimeout(() => {
+      if (!this.validateThemeApplied(theme)) {
+        console.error(`Theme ${theme} was not applied correctly in sidepanel`);
+        return false;
+      }
+      console.log(`Theme ${theme} applied successfully in sidepanel`);
+    }, 50);
+    
+    return true;
+  },
+  
+  getAllThemes() {
+    return Object.keys(THEME_COLORS);
+  },
+  
+  getThemeColors(theme) {
+    return THEME_COLORS[theme] || THEME_COLORS.theme1;
+  },
+  
+  // 테마 적용 검증
+  validateThemeApplied(theme) {
+    const expectedColors = THEME_COLORS[theme];
+    if (!expectedColors) return false;
+    
+    const computedStyle = getComputedStyle(document.body);
+    const primaryColor = computedStyle.getPropertyValue('--primary-color').trim();
+    
+    return primaryColor === expectedColors.main;
+  },
+  
+  // 테마 무결성 검사
+  validateThemeIntegrity() {
+    const missingThemes = [];
+    const requiredSelectors = ['theme1', 'theme2', 'theme3', 'theme4', 'theme5'];
+    
+    requiredSelectors.forEach(theme => {
+      if (!THEME_COLORS[theme]) {
+        missingThemes.push(theme);
+      }
+    });
+    
+    if (missingThemes.length > 0) {
+      console.error('Missing theme definitions in sidepanel:', missingThemes);
+      return false;
+    }
+    
+    console.log('All themes are properly defined in sidepanel');
+    return true;
+  },
+  
+  init() {
+    // 테마 무결성 검사
+    if (!this.validateThemeIntegrity()) {
+      console.error('Sidepanel theme integrity check failed');
+    }
+    
+    const currentTheme = this.getCurrentTheme();
+    document.body.setAttribute('data-theme', currentTheme);
+    
+    // 테마 적용 검증
+    setTimeout(() => {
+      if (!this.validateThemeApplied(currentTheme)) {
+        console.error(`Initial sidepanel theme ${currentTheme} validation failed`);
+      }
+    }, 100);
+  }
+};
+
 // ==================== 상태 관리 ====================
 const createState = () => ({
   lists: {},
@@ -911,6 +1005,9 @@ const setupEventListeners = () => {
 
 // ==================== 초기화 ====================
 const init = async () => {
+  // 테마 초기화
+  themeManager.init();
+  
   await loadData();
   
   // UI 업데이트
@@ -922,6 +1019,13 @@ const init = async () => {
   
   console.log('Side Panel 초기화 완료');
 };
+
+// 메시지 리스너 (테마 업데이트)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'updateTheme') {
+    themeManager.setTheme(message.theme);
+  }
+});
 
 // DOM 로드 완료 후 초기화
 if (document.readyState === 'loading') {
