@@ -1,11 +1,117 @@
 // 지도 장소 스크랩 Background Script
 
-// 익스텐션 설치
+// ==================== 초기화 ====================
 chrome.runtime.onInstalled.addListener(() => {
   console.log('지도 장소 스크랩 익스텐션이 설치되었습니다.');
+  
+  // Side Panel 설정
+  chrome.sidePanel
+    .setPanelBehavior({ openPanelOnActionClick: true })
+    .catch((error) => console.error(error));
+  
+  // 컨텍스트 메뉴 생성
+  createContextMenus();
 });
 
-// 메시지 처리
+// ==================== Side Panel 관리 ====================
+chrome.action.onClicked.addListener(async (tab) => {
+  // Side Panel 토글 (자동으로 처리됨)
+  console.log('Side Panel 토글');
+});
+
+// 키보드 단축키 처리
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'toggle-side-panel') {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Side Panel 열기/닫기
+    try {
+      await chrome.sidePanel.open({ tabId: tab.id });
+    } catch (error) {
+      console.error('Side Panel 토글 실패:', error);
+    }
+  }
+});
+
+// ==================== 컨텍스트 메뉴 관리 ====================
+function createContextMenus() {
+  chrome.contextMenus.create({
+    id: 'save-current-place',
+    title: '현재 장소 저장하기',
+    contexts: ['page'],
+    documentUrlPatterns: [
+      'https://map.naver.com/*',
+      'https://map.kakao.com/*',
+      'https://place.map.kakao.com/*'
+    ]
+  });
+  
+  chrome.contextMenus.create({
+    id: 'open-settings',
+    title: '설정 열기',
+    contexts: ['action']
+  });
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === 'save-current-place') {
+    // content script에 장소 저장 요청
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, { 
+        action: 'getCurrentPlaceData' 
+      });
+      
+      if (response?.success && response.placeData) {
+        // Side Panel에 장소 추가 알림
+        chrome.runtime.sendMessage({
+          action: 'addPlace',
+          placeData: response.placeData
+        });
+        
+        // 성공 알림
+        showNotification('장소가 저장되었습니다!', 'success');
+      } else {
+        showNotification('현재 선택된 장소 정보를 찾을 수 없습니다.', 'error');
+      }
+    } catch (error) {
+      console.error('컨텍스트 메뉴 장소 저장 실패:', error);
+      showNotification('장소 저장 중 오류가 발생했습니다.', 'error');
+    }
+  } else if (info.menuItemId === 'open-settings') {
+    // 설정 창 열기
+    chrome.windows.create({
+      url: chrome.runtime.getURL('popup.html'),
+      type: 'popup',
+      width: 350,
+      height: 600,
+      focused: true
+    });
+  }
+});
+
+// ==================== 알림 관리 ====================
+function showNotification(message, type = 'info') {
+  const iconPath = type === 'error' ? 'icons/icon48.png' : 'icons/icon48.png';
+  
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: iconPath,
+    title: 'CustomPlaceDB',
+    message: message,
+    silent: type === 'success' // 성공 시에는 소리 없음
+  });
+  
+  // 3초 후 자동 제거
+  setTimeout(() => {
+    chrome.notifications.getAll((notifications) => {
+      Object.keys(notifications).forEach(id => {
+        chrome.notifications.clear(id);
+      });
+    });
+  }, 3000);
+}
+
+// ==================== 메시지 처리 ====================
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'get-storage') {
     chrome.storage.local.get(request.key, (result) => {
@@ -51,11 +157,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     return true; // 비동기 응답을 위해 true 반환
   }
+  
+  if (request.action === 'showNotification') {
+    showNotification(request.message, request.type || 'info');
+    sendResponse({ success: true });
+    return true;
+  }
 });
 
-// 탭 업데이트 감지
+// ==================== 탭 관리 ====================
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && tab.url.includes('map.naver.com')) {
-    console.log('지도 페이지가 로드되었습니다.');
+  if (changeInfo.status === 'complete' && tab.url) {
+    const isMapSite = tab.url.includes('map.naver.com') || 
+                     tab.url.includes('map.kakao.com');
+    
+    if (isMapSite) {
+      console.log('지도 페이지가 로드되었습니다:', tab.url);
+      
+      // 해당 탭에서 Side Panel 활성화
+      chrome.sidePanel.setOptions({
+        tabId: tabId,
+        enabled: true
+      }).catch(error => {
+        console.error('Side Panel 활성화 실패:', error);
+      });
+    }
   }
 });
