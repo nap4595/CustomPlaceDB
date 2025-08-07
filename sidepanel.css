@@ -10,23 +10,33 @@ body {
   position: relative;
 }
 
-/* 설정 버튼 - 우상단 고정 */
+/* 상단 컨트롤 영역 */
+.map-top-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+/* 새 목록 버튼 스타일 */
+.map-add-list-btn {
+  flex: 1;
+  margin-right: 10px;
+}
+
+/* 설정 버튼 - 인라인 배치 */
 .map-settings-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
   background: #d0854d;
   border: none;
   color: white;
   font-size: 14px;
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 8px 12px;
   border-radius: 6px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -38,10 +48,10 @@ body {
 
 /* 목록 관리 영역 */
 .map-list-manager {
-  padding: 50px 20px 15px 20px;
+  padding: 20px 20px 15px 20px;
   border-bottom: 1px solid #f1c6a6;
   flex-shrink: 0;
-  background-color: rgba(247, 231, 200, 0.7);
+  background-color: #ffffff;
 }
 
 /* 목록 표시 영역 */
@@ -58,7 +68,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
-  background-color: #f7e7c8;
+  background-color: #ffffff;
   cursor: pointer;
 }
 
@@ -71,7 +81,7 @@ body {
 /* 목록 액션 버튼 영역 */
 .map-list-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -142,7 +152,7 @@ body {
 }
 
 .map-place-card {
-  background-color: rgba(247, 231, 200, 0.8);
+  background-color: #ffffff;
   border: 1px solid #f1c6a6;
   border-radius: 8px;
   padding: 12px;
