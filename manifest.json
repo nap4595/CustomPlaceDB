@@ -18,7 +18,7 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://map.naver.com/*"],
+      "matches": ["https://map.naver.com/*", "https://pcmap.place.naver.com/*"],
       "js": ["content.js"],
       "run_at": "document_end"
     },
