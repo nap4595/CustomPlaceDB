@@ -5,11 +5,10 @@
   "description": "네이버지도, 카카오맵에서 장소를 저장하고 개인 맞춤 데이터베이스를 구축하세요. 모든 데이터는 로컬에 안전하게 저장됩니다.",
   "permissions": [
     "storage",
-    "tabs",
+    "activeTab",
     "sidePanel",
     "notifications",
-    "contextMenus",
-    "activeTab"
+    "contextMenus"
   ],
   "host_permissions": [
     "https://map.naver.com/*",
