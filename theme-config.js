@@ -29,7 +29,8 @@ const themeManager = {
   },
   
   setTheme(theme) {
-    if (!THEME_COLORS[theme]) {
+    const colors = this.getThemeColors(theme);
+    if (!colors) {
       console.warn(`Unknown theme: ${theme}`);
       return false;
     }
@@ -121,6 +122,41 @@ const themeManager = {
     } catch (error) {
       console.error('커스텀 테마 저장 실패:', error);
       throw new Error('테마 저장에 실패했습니다.');
+    }
+  },
+  
+  updateCustomTheme(themeId, name, colors) {
+    if (!this.isCustomTheme(themeId)) {
+      throw new Error('기본 테마는 수정할 수 없습니다.');
+    }
+    
+    if (!this.validateColors(colors)) {
+      throw new Error('유효하지 않은 색상 형식입니다.');
+    }
+    
+    const customThemes = this.getCustomThemes();
+    if (!customThemes[themeId]) {
+      throw new Error('존재하지 않는 커스텀 테마입니다.');
+    }
+    
+    // 기존 정보 유지하면서 업데이트
+    customThemes[themeId] = {
+      ...customThemes[themeId],
+      name: name || customThemes[themeId].name,
+      colors: colors,
+      modified: new Date().toISOString()
+    };
+    
+    try {
+      localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
+      
+      // CSS 스타일 업데이트
+      this.createThemeCSS(themeId, colors);
+      
+      return themeId;
+    } catch (error) {
+      console.error('커스텀 테마 수정 실패:', error);
+      throw new Error('테마 수정에 실패했습니다.');
     }
   },
   

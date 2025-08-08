@@ -11,7 +11,7 @@
             width: 600px;
             min-height: 400px;
             padding: 0;
-            margin: 0;
+            margin: 0 auto;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #ffffff;
             color: var(--text-color);
@@ -22,6 +22,13 @@
             color: white;
             padding: 20px;
             text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100vw;
+            z-index: 10;
+            box-sizing: border-box;
         }
         
         .header h1 {
@@ -43,6 +50,8 @@
             grid-template-rows: 1fr 1fr;
             gap: 16px;
             height: 400px;
+            margin: 100px auto 0 auto;
+            max-width: 560px;
         }
         
         .grid-item {
@@ -418,15 +427,14 @@
         <!-- 첫 번째 줄 -->
         <!-- 1. 대시보드 & 빠른 실행 -->
         <div class="grid-item">
-            <h3>대시보드 & 빠른 실행</h3>
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="list-count">0</div>
-                    <div class="stat-label">저장된 목록</div>
+            <div class="stats" style="margin-bottom: 8px;">
+                <div class="stat-card" style="padding: 8px;">
+                    <div class="stat-number" id="list-count" style="font-size: 16px;">0</div>
+                    <div class="stat-label" style="font-size: 9px;">저장된 목록</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="place-count">0</div>
-                    <div class="stat-label">총 장소 수</div>
+                <div class="stat-card" style="padding: 8px;">
+                    <div class="stat-number" id="place-count" style="font-size: 16px;">0</div>
+                    <div class="stat-label" style="font-size: 9px;">총 장소 수</div>
                 </div>
             </div>
             <div class="map-links">
@@ -452,22 +460,20 @@
         <div class="grid-item">
             <h3>테마 설정</h3>
             <div class="theme-selector-container">
-                <div class="theme-controls">
-                    <select id="theme-select" class="theme-selector">
-                        <option value="theme1" selected>테마 1 - 올리브 그린</option>
-                        <option value="theme2">테마 2 - 포레스트 그린</option>
-                        <option value="theme3">테마 3 - 스프링 라임</option>
-                        <option value="theme4">테마 4 - 바이올렛 퍼플</option>
-                        <option value="theme5">테마 5 - 라벤더 블루</option>
-                    </select>
-                    <button class="custom-theme-btn" id="add-custom-theme" title="커스텀 테마 만들기">+</button>
-                </div>
-                <div class="theme-preview" id="theme-preview">
+                <select id="theme-select" class="theme-selector" style="width: 100%; margin-bottom: 8px;">
+                    <option value="theme1" selected>올리브 그린</option>
+                    <option value="theme2">포레스트 그린</option>
+                    <option value="theme3">스프링 라임</option>
+                    <option value="theme4">바이올렛 퍼플</option>
+                    <option value="theme5">라벤더 블루</option>
+                </select>
+                <div class="theme-preview" id="theme-preview" style="margin-bottom: 8px;">
                     <div class="theme-color-box" id="main-bg-preview"></div>
                     <div class="theme-color-box" id="sub-bg-preview"></div>
                     <div class="theme-color-box" id="accent-preview"></div>
                     <div class="theme-color-box" id="border-preview"></div>
                 </div>
+                <button class="action-btn" id="manage-custom-theme" style="width: 100%; font-size: 11px;">커스텀 테마</button>
             </div>
         </div>
 
@@ -485,19 +491,20 @@
         <!-- 5. v2.0 정보 -->
         <div class="grid-item">
             <h3>v2.0 새로운 기능</h3>
-            <p>Chrome 공식 Side Panel API로 업그레이드되어 더욱 안정적이고 빠릅니다.</p>
             <div class="feature-list">
                 <div class="feature-item">브라우저 네이티브 사이드 패널</div>
                 <div class="feature-item">시스템 알림 지원</div>
                 <div class="feature-item">향상된 성능과 안정성</div>
+                <div class="feature-item">테마 기능 추가</div>
             </div>
         </div>
 
-        <!-- 6. 즐겨찾기 -->
-        <div class="grid-item">
-            <h3>즐겨찾기 장소</h3>
-            <div id="favorite-places" class="favorite-places">
-                <p style="text-align: center; color: var(--accent-color); margin-top: 20px;">아직 즐겨찾기한 장소가 없습니다</p>
+        <!-- 6. 정보 -->
+        <div class="grid-item" style="background: transparent; border: none;">
+            <div style="text-align: center; padding: 16px; font-size: 11px; color: #A6B28B;">
+                CustomPlaceDB v2.0 - Side Panel Edition<br>
+                제작자: nap4595@gmail.com<br>
+                <a href="#" id="privacy-policy-link" style="color: #999; text-decoration: none;">개인정보 처리방침</a>
             </div>
         </div>
     </div>
@@ -527,10 +534,29 @@
         </div>
     </div>
 
-    <!-- 커스텀 테마 생성 모달 -->
+    <!-- 커스텀 테마 관리 모달 -->
+    <div id="custom-theme-management-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 400px;">
+            <h3>커스텀 테마 관리</h3>
+            
+            <div class="modal-buttons" style="margin-bottom: 20px;">
+                <button class="action-btn primary" id="add-new-theme">새 테마 추가</button>
+            </div>
+            
+            <div id="custom-themes-list" style="max-height: 300px; overflow-y: auto;">
+                <!-- 커스텀 테마 목록이 여기에 표시됩니다 -->
+            </div>
+            
+            <div class="modal-buttons" style="margin-top: 16px;">
+                <button class="action-btn" id="close-theme-management">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 커스텀 테마 생성/수정 모달 -->
     <div id="custom-theme-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="width: 320px;">
-            <h3>커스텀 테마 만들기</h3>
+        <div class="modal-content" style="width: 600px;">
+            <h3 id="custom-theme-modal-title">커스텀 테마 만들기</h3>
             
             <div style="margin-bottom: 16px;">
                 <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--primary-color);">테마 이름:</label>
@@ -580,18 +606,13 @@
             
             <div class="modal-buttons" style="margin-top: 16px;">
                 <button class="action-btn primary" id="save-custom-theme">저장</button>
+                <button class="action-btn" id="delete-custom-theme" style="background-color: #dc3545; color: white; display: none;">삭제</button>
                 <button class="action-btn" id="cancel-custom-theme">취소</button>
             </div>
         </div>
     </div>
     
     <input type="file" id="file-input" accept=".json" style="display: none;">
-    
-    <div class="version">
-        CustomPlaceDB v2.0 - Side Panel Edition<br>
-        제작자: nap4595@gmail.com<br>
-        <a href="#" id="privacy-policy-link" style="color: #999; text-decoration: none;">개인정보 처리방침</a>
-    </div>
     
     <script src="theme-config.js"></script>
     <script src="popup.js"></script>

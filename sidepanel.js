@@ -931,6 +931,10 @@ const init = async () => {
 // 메시지 리스너 (테마 업데이트)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'updateTheme') {
+    // 커스텀 테마인 경우 CSS를 먼저 재로드
+    if (themeManager.isCustomTheme(message.theme)) {
+      themeManager.loadCustomThemeStyles();
+    }
     themeManager.setTheme(message.theme);
   }
 });

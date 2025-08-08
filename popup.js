@@ -84,9 +84,9 @@ function setupEventListeners() {
     });
   });
   
-  // 커스텀 테마 추가 버튼
-  document.getElementById('add-custom-theme').addEventListener('click', () => {
-    showCustomThemeModal();
+  // 커스텀 테마 관리 버튼
+  document.getElementById('manage-custom-theme').addEventListener('click', () => {
+    showCustomThemeManagementModal();
   });
   
   // 커스텀 테마 모달 이벤트들
@@ -457,7 +457,7 @@ async function clearAllData() {
 
 // ==================== 유틸리티 ====================
 async function showMessage(message) {
-  const platformColor = await getCurrentPlatformColor();
+  const themeColor = getComputedStyle(document.body).getPropertyValue('--primary-color').trim() || '#3E3F29';
   
   const messageDiv = document.createElement('div');
   messageDiv.style.cssText = `
@@ -470,7 +470,7 @@ async function showMessage(message) {
     font-size: 12px;
     font-weight: bold;
     z-index: 1000;
-    background-color: ${platformColor};
+    background-color: ${themeColor};
     color: white;
   `;
   messageDiv.textContent = message;
@@ -483,28 +483,6 @@ async function showMessage(message) {
   }, 3000);
 }
 
-async function getCurrentPlatformColor() {
-  try {
-    // 현재 활성 탭 확인
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tabs.length === 0) return '#000'; // 기본값
-    
-    const currentTab = tabs[0];
-    const url = currentTab.url;
-    
-    // 플랫폼 감지
-    if (url.includes('naver.com') && url.includes('/map')) {
-      return '#03c75a'; // 네이버 초록
-    } else if (url.includes('kakao.com')) {
-      return '#FFE300'; // 카카오 노랑
-    }
-    
-    return '#000'; // 기본값 (검은색)
-  } catch (error) {
-    console.error('플랫폼 색상 감지 실패:', error);
-    return '#000'; // 기본값
-  }
-}
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local' && changes.mapScraperData) {
@@ -514,9 +492,52 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 
 // ==================== 커스텀 테마 관리 ====================
 
-// 커스텀 테마 모달 표시
-function showCustomThemeModal() {
+let currentEditingThemeId = null; // 현재 수정 중인 테마 ID
+
+// 커스텀 테마 관리 모달 표시
+function showCustomThemeManagementModal() {
+  loadCustomThemesList();
+  document.getElementById('custom-theme-management-modal').style.display = 'flex';
+}
+
+// 커스텀 테마 관리 모달 숨기기
+function hideCustomThemeManagementModal() {
+  document.getElementById('custom-theme-management-modal').style.display = 'none';
+}
+
+// 커스텀 테마 생성/수정 모달 표시
+function showCustomThemeModal(themeId = null) {
+  currentEditingThemeId = themeId;
   resetCustomThemeModal();
+  
+  if (themeId) {
+    // 수정 모드
+    const customThemes = themeManager.getCustomThemes();
+    const theme = customThemes[themeId];
+    if (theme) {
+      document.getElementById('custom-theme-modal-title').textContent = '커스텀 테마 수정';
+      document.getElementById('custom-theme-name').value = theme.name;
+      document.getElementById('custom-main-color').value = theme.colors.main;
+      document.getElementById('custom-sub-color').value = theme.colors.sub;
+      document.getElementById('custom-accent-color').value = theme.colors.accent;
+      document.getElementById('custom-border-color').value = theme.colors.border;
+      
+      // 피커와 미리보기 업데이트
+      document.getElementById('custom-main-picker').value = theme.colors.main;
+      document.getElementById('custom-sub-picker').value = theme.colors.sub;
+      document.getElementById('custom-accent-picker').value = theme.colors.accent;
+      document.getElementById('custom-border-picker').value = theme.colors.border;
+      updateCustomThemePreview();
+      
+      // 삭제 버튼 표시
+      document.getElementById('delete-custom-theme').style.display = 'inline-block';
+    }
+  } else {
+    // 생성 모드
+    document.getElementById('custom-theme-modal-title').textContent = '커스텀 테마 만들기';
+    document.getElementById('delete-custom-theme').style.display = 'none';
+  }
+  
   document.getElementById('custom-theme-modal').style.display = 'flex';
 }
 
@@ -543,10 +564,16 @@ function resetCustomThemeModal() {
 
 // 커스텀 테마 모달 이벤트 설정
 function setupCustomThemeModalEvents() {
-  // 저장 버튼
-  document.getElementById('save-custom-theme').addEventListener('click', saveCustomTheme);
+  // 관리 모달 이벤트
+  document.getElementById('add-new-theme').addEventListener('click', () => {
+    hideCustomThemeManagementModal();
+    showCustomThemeModal();
+  });
+  document.getElementById('close-theme-management').addEventListener('click', hideCustomThemeManagementModal);
   
-  // 취소 버튼
+  // 생성/수정 모달 이벤트
+  document.getElementById('save-custom-theme').addEventListener('click', saveCustomTheme);
+  document.getElementById('delete-custom-theme').addEventListener('click', deleteCurrentCustomTheme);
   document.getElementById('cancel-custom-theme').addEventListener('click', hideCustomThemeModal);
   
   // 색상 입력 필드와 피커 연동
@@ -591,6 +618,112 @@ function updateCustomThemePreview() {
   document.getElementById('custom-border-preview').style.backgroundColor = document.getElementById('custom-border-color').value;
 }
 
+// 커스텀 테마 목록 로드
+function loadCustomThemesList() {
+  const customThemes = themeManager.getCustomThemes();
+  const container = document.getElementById('custom-themes-list');
+  
+  if (Object.keys(customThemes).length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: var(--accent-color); padding: 20px;">생성된 커스텀 테마가 없습니다.</p>';
+    return;
+  }
+  
+  container.innerHTML = Object.entries(customThemes).map(([themeId, theme]) => `
+    <div class="custom-theme-item" data-theme-id="${themeId}" style="
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 12px; 
+      margin-bottom: 8px; 
+      border: 1px solid var(--background-color); 
+      border-radius: 6px;
+      background: var(--secondary-color);
+    ">
+      <div style="flex: 1;">
+        <div style="font-weight: bold; margin-bottom: 4px;">${theme.name}</div>
+        <div style="display: flex; gap: 4px;">
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.main}; border: 1px solid #ccc;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.sub}; border: 1px solid #ccc;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.accent}; border: 1px solid #ccc;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.border}; border: 1px solid #ccc;"></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="action-btn edit-theme-btn" style="padding: 6px 12px; font-size: 11px;">수정</button>
+        <button class="action-btn delete-theme-btn" style="padding: 6px 12px; font-size: 11px; background: #dc3545; color: white;">삭제</button>
+      </div>
+    </div>
+  `).join('');
+  
+  // 이벤트 리스너 추가
+  setupCustomThemeListeners();
+}
+
+// 커스텀 테마 목록 이벤트 리스너 설정
+function setupCustomThemeListeners() {
+  const container = document.getElementById('custom-themes-list');
+  
+  // 이벤트 위임을 사용하여 수정/삭제 버튼 처리
+  container.addEventListener('click', (e) => {
+    const themeItem = e.target.closest('.custom-theme-item');
+    if (!themeItem) return;
+    
+    const themeId = themeItem.getAttribute('data-theme-id');
+    
+    if (e.target.classList.contains('edit-theme-btn')) {
+      editCustomTheme(themeId);
+    } else if (e.target.classList.contains('delete-theme-btn')) {
+      deleteCustomThemeFromList(themeId);
+    }
+  });
+}
+
+// 커스텀 테마 수정
+function editCustomTheme(themeId) {
+  hideCustomThemeManagementModal();
+  showCustomThemeModal(themeId);
+}
+
+// 목록에서 커스텀 테마 삭제
+async function deleteCustomThemeFromList(themeId) {
+  const customThemes = themeManager.getCustomThemes();
+  const theme = customThemes[themeId];
+  
+  if (!theme) return;
+  
+  if (!confirm(`'${theme.name}' 테마를 삭제하시겠습니까?`)) return;
+  
+  try {
+    themeManager.deleteCustomTheme(themeId);
+    
+    // 현재 사용 중인 테마라면 기본 테마로 변경
+    const currentTheme = themeManager.getCurrentTheme();
+    if (currentTheme === themeId) {
+      const themeSelect = document.getElementById('theme-select');
+      themeSelect.value = 'theme1';
+      themeManager.setTheme('theme1');
+      updateThemePreview('theme1');
+      
+      chrome.runtime.sendMessage({
+        action: 'updateTheme',
+        theme: 'theme1'
+      });
+    }
+    
+    // 테마 선택기 업데이트
+    updateThemeSelector();
+    
+    // 목록 새로고침
+    loadCustomThemesList();
+    
+    await showMessage(`커스텀 테마 '${theme.name}'이 삭제되었습니다.`);
+    
+  } catch (error) {
+    console.error('커스텀 테마 삭제 실패:', error);
+    alert(error.message || '테마 삭제에 실패했습니다.');
+  }
+}
+
 // 커스텀 테마 저장
 async function saveCustomTheme() {
   const name = document.getElementById('custom-theme-name').value.trim();
@@ -613,12 +746,24 @@ async function saveCustomTheme() {
   }
   
   try {
-    const themeId = themeManager.saveCustomTheme(name, colors);
+    let themeId;
+    let message;
+    
+    if (currentEditingThemeId) {
+      // 수정 모드
+      themeManager.updateCustomTheme(currentEditingThemeId, name, colors);
+      themeId = currentEditingThemeId;
+      message = `커스텀 테마 '${name}'이 수정되었습니다!`;
+    } else {
+      // 생성 모드
+      themeId = themeManager.saveCustomTheme(name, colors);
+      message = `커스텀 테마 '${name}'이 생성되었습니다!`;
+    }
     
     // 테마 선택기 업데이트
     updateThemeSelector();
     
-    // 새로 생성된 테마로 전환
+    // 테마 적용
     const themeSelect = document.getElementById('theme-select');
     themeSelect.value = themeId;
     themeManager.setTheme(themeId);
@@ -631,11 +776,51 @@ async function saveCustomTheme() {
     });
     
     hideCustomThemeModal();
-    await showMessage(`커스텀 테마 '${name}'이 생성되었습니다!`);
+    await showMessage(message);
     
   } catch (error) {
     console.error('커스텀 테마 저장 실패:', error);
     alert(error.message || '테마 저장에 실패했습니다.');
+  }
+}
+
+// 현재 수정 중인 커스텀 테마 삭제
+async function deleteCurrentCustomTheme() {
+  if (!currentEditingThemeId) return;
+  
+  const customThemes = themeManager.getCustomThemes();
+  const theme = customThemes[currentEditingThemeId];
+  
+  if (!theme) return;
+  
+  if (!confirm(`'${theme.name}' 테마를 삭제하시겠습니까?`)) return;
+  
+  try {
+    themeManager.deleteCustomTheme(currentEditingThemeId);
+    
+    // 현재 사용 중인 테마라면 기본 테마로 변경
+    const currentTheme = themeManager.getCurrentTheme();
+    if (currentTheme === currentEditingThemeId) {
+      const themeSelect = document.getElementById('theme-select');
+      themeSelect.value = 'theme1';
+      themeManager.setTheme('theme1');
+      updateThemePreview('theme1');
+      
+      chrome.runtime.sendMessage({
+        action: 'updateTheme',
+        theme: 'theme1'
+      });
+    }
+    
+    // 테마 선택기 업데이트
+    updateThemeSelector();
+    
+    hideCustomThemeModal();
+    await showMessage(`커스텀 테마 '${theme.name}'이 삭제되었습니다.`);
+    
+  } catch (error) {
+    console.error('커스텀 테마 삭제 실패:', error);
+    alert(error.message || '테마 삭제에 실패했습니다.');
   }
 }
 
