@@ -225,7 +225,7 @@ const updatePlacesContainer = (currentList) => {
   if (container) {
     container.innerHTML = renderPlaces(currentList);
     setupPlaceDragAndDrop();
-    setupPlaceEventListeners();
+    // setupPlaceEventListeners() 제거 - 이벤트 위임으로 처리
   }
 };
 
@@ -617,63 +617,7 @@ const setupPlaceDragAndDrop = () => {
   });
 };
 
-const setupPlaceEventListeners = () => {
-  // 장소 이름 클릭 이벤트
-  document.querySelectorAll('.map-place-name').forEach(nameEl => {
-    nameEl.addEventListener('click', (e) => {
-      const url = e.target.getAttribute('data-url');
-      if (url) {
-        chrome.tabs.create({ url });
-      }
-    });
-  });
-
-  // 삭제 버튼 이벤트
-  document.querySelectorAll('.map-delete-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const placeId = e.target.getAttribute('data-place-id');
-      await handleDeletePlace(placeId);
-    });
-  });
-
-  // 커스텀 필드 입력 이벤트
-  document.querySelectorAll('.map-custom-input').forEach(input => {
-    input.addEventListener('change', async (e) => {
-      const placeId = e.target.getAttribute('data-place-id');
-      const fieldName = e.target.getAttribute('data-field-name');
-      const value = e.target.value;
-
-      const currentList = state.lists[state.currentListId];
-      if (currentList) {
-        const place = currentList.places.find(p => p.id === placeId);
-        if (place) {
-          if (!place.customValues) place.customValues = {};
-          place.customValues[fieldName] = value;
-          await saveData();
-        }
-      }
-    });
-  });
-
-  // 커스텀 필드 선택 이벤트
-  document.querySelectorAll('.map-custom-select').forEach(select => {
-    select.addEventListener('change', async (e) => {
-      const placeId = e.target.getAttribute('data-place-id');
-      const fieldName = e.target.getAttribute('data-field-name');
-      const value = e.target.value;
-
-      const currentList = state.lists[state.currentListId];
-      if (currentList) {
-        const place = currentList.places.find(p => p.id === placeId);
-        if (place) {
-          if (!place.customValues) place.customValues = {};
-          place.customValues[fieldName] = value;
-          await saveData();
-        }
-      }
-    });
-  });
-};
+// setupPlaceEventListeners 함수 제거 - 이벤트 위임으로 대체됨
 
 const setupFieldsDragAndDrop = () => {
   const fieldItems = document.querySelectorAll('.map-field-item');
@@ -900,10 +844,18 @@ const setupEventListeners = () => {
     }
   });
   
-  // 커스텀 필드 변경 이벤트 위임
+  // 커스텀 필드 변경 이벤트 위임 (input과 change 모두 처리)
   document.getElementById('map-places-container')?.addEventListener('input', (e) => {
     if (e.target.classList.contains('map-custom-input') || 
         e.target.classList.contains('map-custom-select')) {
+      const placeId = e.target.dataset.placeId;
+      const fieldName = e.target.dataset.fieldName;
+      handleCustomFieldChange(placeId, fieldName, e.target.value);
+    }
+  });
+  
+  document.getElementById('map-places-container')?.addEventListener('change', (e) => {
+    if (e.target.classList.contains('map-custom-select')) {
       const placeId = e.target.dataset.placeId;
       const fieldName = e.target.dataset.fieldName;
       handleCustomFieldChange(placeId, fieldName, e.target.value);
@@ -936,6 +888,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       themeManager.loadCustomThemeStyles();
     }
     themeManager.setTheme(message.theme);
+  }
+});
+
+// Storage 변경 감지 리스너 (데이터 가져오기 후 자동 새로고침)
+chrome.storage.onChanged.addListener(async (changes, namespace) => {
+  if (namespace === 'local' && changes.mapScraperData) {
+    console.log('Storage data changed, refreshing sidepanel...');
+    
+    // 현재 선택된 목록 ID 저장
+    const previousListId = state.currentListId;
+    
+    // 데이터 다시 로드
+    await loadData();
+    
+    // 이전에 선택된 목록이 여전히 존재하면 유지, 아니면 첫 번째 목록 선택
+    if (previousListId && state.lists[previousListId]) {
+      state.currentListId = previousListId;
+    } else {
+      const listIds = Object.keys(state.lists);
+      state.currentListId = listIds.length > 0 ? listIds[0] : null;
+    }
+    
+    // UI 업데이트
+    updateListSelect(state.lists, state.currentListId);
+    updatePlacesContainer(state.lists[state.currentListId]);
   }
 });
 
