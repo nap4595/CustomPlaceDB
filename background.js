@@ -16,51 +16,44 @@ chrome.runtime.onInstalled.addListener(() => {
 // ==================== Side Panel 관리 ====================
 // Side Panel은 setPanelBehavior({ openPanelOnActionClick: true })로 자동 처리됨
 
-// 키보드 단축키 처리
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command === 'toggle-side-panel') {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+// ==================== 장소 저장 로직 ====================
+async function savePlaceFromTab(tab) {
+  // 현재 탭이 지도 사이트인지 확인
+  const isMapSite = tab.url && (
+    tab.url.includes('map.naver.com') || 
+    tab.url.includes('map.kakao.com') || 
+    tab.url.includes('place.map.kakao.com')
+  );
+
+  if (!isMapSite) {
+    showNotification('지도 사이트에서만 장소를 추가할 수 있습니다.', 'warning');
+    return { success: false, error: 'Not a map site' };
+  }
+
+  try {
+    const response = await chrome.tabs.sendMessage(tab.id, { 
+      action: 'getCurrentPlaceData' 
+    });
     
-    try {
-      await chrome.sidePanel.open({ tabId: tab.id });
-    } catch (error) {
-      console.error('Side Panel 토글 실패:', error);
-    }
-  } else if (command === 'add-current-place') {
-    // 현재 탭이 지도 사이트인지 확인
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const isMapSite = tab.url && (
-      tab.url.includes('map.naver.com') || 
-      tab.url.includes('map.kakao.com') || 
-      tab.url.includes('place.map.kakao.com')
-    );
-    
-    if (!isMapSite) {
-      showNotification('지도 사이트에서만 장소를 추가할 수 있습니다.', 'warning');
-      return;
-    }
-    
-    try {
-      const response = await chrome.tabs.sendMessage(tab.id, { 
-        action: 'getCurrentPlaceData' 
+    if (response?.success && response.placeData) {
+      // Side Panel에 장소 추가 알림
+      chrome.runtime.sendMessage({
+        action: 'addPlace',
+        placeData: response.placeData
       });
       
-      if (response?.success && response.placeData) {
-        // Side Panel에 장소 추가 요청
-        chrome.runtime.sendMessage({
-          action: 'addPlaceFromShortcut',
-          placeData: response.placeData
-        });
-        showNotification('장소가 저장되었습니다!', 'success');
-      } else {
-        showNotification('현재 선택된 장소 정보를 찾을 수 없습니다.', 'error');
-      }
-    } catch (error) {
-      console.error('단축키 장소 추가 실패:', error);
-      showNotification('장소 추가 중 오류가 발생했습니다.', 'error');
+      showNotification('장소가 저장되었습니다!', 'success');
+      return { success: true };
+    } else {
+      showNotification('현재 선택된 장소 정보를 찾을 수 없습니다.', 'error');
+      return { success: false, error: 'Could not find place data' };
     }
+  } catch (error) {
+    console.error('장소 저장 실패:', error);
+    showNotification('장소 저장 중 오류가 발생했습니다.', 'error');
+    return { success: false, error: error.message };
   }
-});
+}
 
 
 // ==================== 컨텍스트 메뉴 관리 ====================
@@ -85,28 +78,7 @@ function createContextMenus() {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === 'save-current-place') {
-    // content script에 장소 저장 요청
-    try {
-      const response = await chrome.tabs.sendMessage(tab.id, { 
-        action: 'getCurrentPlaceData' 
-      });
-      
-      if (response?.success && response.placeData) {
-        // Side Panel에 장소 추가 알림
-        chrome.runtime.sendMessage({
-          action: 'addPlace',
-          placeData: response.placeData
-        });
-        
-        // 성공 알림
-        showNotification('장소가 저장되었습니다!', 'success');
-      } else {
-        showNotification('현재 선택된 장소 정보를 찾을 수 없습니다.', 'error');
-      }
-    } catch (error) {
-      console.error('컨텍스트 메뉴 장소 저장 실패:', error);
-      showNotification('장소 저장 중 오류가 발생했습니다.', 'error');
-    }
+    await savePlaceFromTab(tab);
   } else if (info.menuItemId === 'open-settings') {
     // 설정 창 열기
     chrome.windows.create({
@@ -193,17 +165,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
-});
 
-// ==================== 탭 관리 ====================
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    const isMapSite = tab.url.includes('map.naver.com') || 
-                     tab.url.includes('map.kakao.com');
-    
-    if (isMapSite) {
-      console.log('지도 페이지가 로드되었습니다:', tab.url);
-      // Side Panel은 manifest.json의 side_panel.default_path 설정으로 모든 탭에서 사용 가능
-    }
+  if (request.action === 'requestCurrentPlaceData') {
+    (async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const result = await savePlaceFromTab(tab);
+      sendResponse(result);
+    })();
+    return true; // for async response
   }
 });
+
+

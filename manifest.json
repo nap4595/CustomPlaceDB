@@ -13,8 +13,7 @@
   "host_permissions": [
     "https://map.naver.com/*",
     "https://pcmap.place.naver.com/*",
-    "https://map.kakao.com/*",
-    "https://place.map.kakao.com/*"
+    "https://map.kakao.com/*"
   ],
   "content_scripts": [
     {
@@ -36,20 +35,6 @@
   },
   "side_panel": {
     "default_path": "sidepanel.html"
-  },
-  "commands": {
-    "toggle-side-panel": {
-      "suggested_key": {
-        "default": "Alt+1"
-      },
-      "description": "사이드 패널 토글"
-    },
-    "add-current-place": {
-      "suggested_key": {
-        "default": "Alt+2"
-      },
-      "description": "현재 장소 추가"
-    }
   },
   "icons": {
     "16": "icons/icon16.png",

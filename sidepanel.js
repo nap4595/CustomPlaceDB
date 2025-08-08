@@ -329,21 +329,20 @@ const handleListChange = async (e) => {
 };
 
 const handleAddCurrentPlace = async () => {
-  // content script에 현재 장소 데이터 요청
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
+  // background script에 현재 장소 데이터 요청
   try {
-    const response = await chrome.tabs.sendMessage(tab.id, { 
-      action: 'getCurrentPlaceData' 
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'requestCurrentPlaceData' 
     });
     
-    if (response?.success && response.placeData) {
-      await addPlace(response.placeData);
-    } else {
-      showNotification('현재 선택된 장소 정보를 찾을 수 없습니다.', 'error');
+    if (!response?.success) {
+      console.warn('장소 추가 실패:', response?.error);
+      // background.js에서 이미 알림을 표시하므로 여기서는 추가 알림 X
     }
+    // 성공 시에는 background.js가 sidepanel에 addPlace 메시지를 보내므로
+    // 여기서 별도 처리할 필요 없음
   } catch (error) {
-    console.error('장소 추가 실패:', error);
+    console.error('장소 추가 요청 실패:', error);
     showNotification('장소 정보를 가져오는 중 오류가 발생했습니다.', 'error');
   }
 };
@@ -414,14 +413,11 @@ const addPlace = async (placeData) => {
 };
 
 const showNotification = (message, type = 'info') => {
-  if (chrome.notifications) {
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon48.png',
-      title: 'CustomPlaceDB',
-      message: message
-    });
-  }
+  chrome.runtime.sendMessage({
+    action: 'showNotification',
+    message: message,
+    type: type
+  });
 };
 
 // ==================== 모달 관리 ====================
@@ -988,8 +984,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       themeManager.loadCustomThemeStyles();
     }
     themeManager.setTheme(message.theme);
-  } else if (message.action === 'addPlaceFromShortcut') {
-    // 단축키로 장소 추가
+  } else if (message.action === 'addPlace') {
+    // 컨텍스트 메뉴나 다른 곳에서 장소 추가 요청
     await addPlace(message.placeData);
   }
 });
