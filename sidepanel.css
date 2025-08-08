@@ -1,5 +1,13 @@
 /* Side Panel 전용 스타일 - 테마는 themes.css에서 로드 */
 
+/* 키보드 네비게이션 스타일 */
+.keyboard-selected {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border: 2px solid var(--accent-color) !important;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3) !important;
+}
+
 body {
   margin: 0;
   padding: 0;

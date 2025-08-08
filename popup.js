@@ -145,6 +145,48 @@ function hideExportModal() {
 }
 
 function setupExportModalEventListeners() {
+  const modal = document.getElementById('export-modal');
+  let selectedIndex = 0;
+  const options = ['export-json', 'export-csv'];
+
+  const updateSelection = () => {
+    options.forEach((optionId, index) => {
+      const element = document.getElementById(optionId);
+      element.classList.toggle('keyboard-selected', index === selectedIndex);
+    });
+  };
+
+  const selectCurrentOption = () => {
+    const selectedId = options[selectedIndex];
+    document.getElementById(selectedId).click();
+  };
+
+  // 키보드 네비게이션 핸들러
+  const handleKeyDown = (e) => {
+    if (modal.style.display === 'none') return;
+
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        hideExportModal();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        selectCurrentOption();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % options.length;
+        updateSelection();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        selectedIndex = selectedIndex === 0 ? options.length - 1 : selectedIndex - 1;
+        updateSelection();
+        break;
+    }
+  };
+
   document.getElementById('export-json').addEventListener('click', async () => {
     hideExportModal();
     await exportDataAsJSON();
@@ -160,14 +202,76 @@ function setupExportModalEventListeners() {
   });
   
   // 모달 배경 클릭 시 닫기
-  document.getElementById('export-modal').addEventListener('click', (e) => {
+  modal.addEventListener('click', (e) => {
     if (e.target.id === 'export-modal') {
       hideExportModal();
     }
   });
+
+  // 모달 표시될 때 키보드 이벤트 추가
+  const originalShowExportModal = window.showExportModal;
+  window.showExportModal = () => {
+    originalShowExportModal();
+    selectedIndex = 0;
+    updateSelection();
+    document.addEventListener('keydown', handleKeyDown);
+  };
+
+  // 모달 숨길 때 키보드 이벤트 제거
+  const originalHideExportModal = window.hideExportModal;
+  window.hideExportModal = () => {
+    document.removeEventListener('keydown', handleKeyDown);
+    options.forEach(optionId => {
+      document.getElementById(optionId).classList.remove('keyboard-selected');
+    });
+    originalHideExportModal();
+  };
 }
 
 function setupImportModalEventListeners() {
+  const modal = document.getElementById('import-modal');
+  let selectedIndex = 0;
+  const options = ['import-merge', 'import-replace'];
+
+  const updateSelection = () => {
+    options.forEach((optionId, index) => {
+      const element = document.getElementById(optionId);
+      element.classList.toggle('keyboard-selected', index === selectedIndex);
+    });
+  };
+
+  const selectCurrentOption = () => {
+    const selectedId = options[selectedIndex];
+    document.getElementById(selectedId).click();
+  };
+
+  // 키보드 네비게이션 핸들러
+  const handleKeyDown = (e) => {
+    if (modal.style.display === 'none') return;
+
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        hideImportModal();
+        document.getElementById('file-input').value = '';
+        break;
+      case 'Enter':
+        e.preventDefault();
+        selectCurrentOption();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % options.length;
+        updateSelection();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        selectedIndex = selectedIndex === 0 ? options.length - 1 : selectedIndex - 1;
+        updateSelection();
+        break;
+    }
+  };
+
   document.getElementById('import-merge').addEventListener('click', () => {
     hideImportModal();
     handleImportChoice('merge');
@@ -180,17 +284,35 @@ function setupImportModalEventListeners() {
   
   document.getElementById('import-cancel').addEventListener('click', () => {
     hideImportModal();
-    // 파일 입력 초기화
     document.getElementById('file-input').value = '';
   });
   
   // 모달 배경 클릭 시 닫기
-  document.getElementById('import-modal').addEventListener('click', (e) => {
+  modal.addEventListener('click', (e) => {
     if (e.target.id === 'import-modal') {
       hideImportModal();
       document.getElementById('file-input').value = '';
     }
   });
+
+  // 모달 표시될 때 키보드 이벤트 추가
+  const originalShowImportModal = window.showImportModal;
+  window.showImportModal = () => {
+    originalShowImportModal();
+    selectedIndex = 0;
+    updateSelection();
+    document.addEventListener('keydown', handleKeyDown);
+  };
+
+  // 모달 숨길 때 키보드 이벤트 제거
+  const originalHideImportModal = window.hideImportModal;
+  window.hideImportModal = () => {
+    document.removeEventListener('keydown', handleKeyDown);
+    options.forEach(optionId => {
+      document.getElementById(optionId).classList.remove('keyboard-selected');
+    });
+    originalHideImportModal();
+  };
 }
 
 function showImportModal() {
@@ -564,17 +686,75 @@ function resetCustomThemeModal() {
 
 // 커스텀 테마 모달 이벤트 설정
 function setupCustomThemeModalEvents() {
+  // 관리 모달 키보드 이벤트
+  const managementModal = document.getElementById('custom-theme-management-modal');
+  const handleManagementKeyDown = (e) => {
+    if (managementModal.style.display === 'none') return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      hideCustomThemeManagementModal();
+    }
+  };
+
+  // 생성/수정 모달 키보드 이벤트
+  const creationModal = document.getElementById('custom-theme-modal');
+  const handleCreationKeyDown = (e) => {
+    if (creationModal.style.display === 'none') return;
+    
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        hideCustomThemeModal();
+        break;
+      case 'Enter':
+        if (e.ctrlKey) { // Ctrl+Enter로 저장
+          e.preventDefault();
+          saveCustomTheme();
+        }
+        break;
+    }
+  };
+
   // 관리 모달 이벤트
   document.getElementById('add-new-theme').addEventListener('click', () => {
     hideCustomThemeManagementModal();
     showCustomThemeModal();
   });
+  
+  const originalShowCustomThemeManagementModal = window.showCustomThemeManagementModal;
+  window.showCustomThemeManagementModal = () => {
+    originalShowCustomThemeManagementModal();
+    document.addEventListener('keydown', handleManagementKeyDown);
+  };
+
+  const originalHideCustomThemeManagementModal = window.hideCustomThemeManagementModal;
+  window.hideCustomThemeManagementModal = () => {
+    document.removeEventListener('keydown', handleManagementKeyDown);
+    originalHideCustomThemeManagementModal();
+  };
+
   document.getElementById('close-theme-management').addEventListener('click', hideCustomThemeManagementModal);
   
   // 생성/수정 모달 이벤트
   document.getElementById('save-custom-theme').addEventListener('click', saveCustomTheme);
   document.getElementById('delete-custom-theme').addEventListener('click', deleteCurrentCustomTheme);
   document.getElementById('cancel-custom-theme').addEventListener('click', hideCustomThemeModal);
+
+  const originalShowCustomThemeModal = window.showCustomThemeModal;
+  window.showCustomThemeModal = (themeId = null) => {
+    originalShowCustomThemeModal(themeId);
+    document.addEventListener('keydown', handleCreationKeyDown);
+    // 테마 이름 입력 필드로 자동 포커스
+    setTimeout(() => {
+      document.getElementById('custom-theme-name').focus();
+    }, 100);
+  };
+
+  const originalHideCustomThemeModal = window.hideCustomThemeModal;
+  window.hideCustomThemeModal = () => {
+    document.removeEventListener('keydown', handleCreationKeyDown);
+    originalHideCustomThemeModal();
+  };
   
   // 색상 입력 필드와 피커 연동
   setupColorInputSync('custom-main-color', 'custom-main-picker', 'custom-main-preview');

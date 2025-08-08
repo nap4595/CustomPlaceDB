@@ -41,6 +41,69 @@ const debounce = (func, delay) => {
   };
 };
 
+// ==================== 키보드 네비게이션 유틸리티 ====================
+const createModalKeyboardHandler = (modal, options = {}) => {
+  const {
+    onEscape = () => {},
+    onEnter = () => {},
+    onArrowKeys = null,
+    focusSelector = null,
+    confirmButtonSelector = null
+  } = options;
+
+  const handleKeyDown = (e) => {
+    if (!modal || modal.style.display === 'none') return;
+
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        onEscape();
+        break;
+      
+      case 'Enter':
+        if (confirmButtonSelector) {
+          const confirmBtn = modal.querySelector(confirmButtonSelector);
+          if (confirmBtn && !confirmBtn.disabled) {
+            e.preventDefault();
+            confirmBtn.click();
+          }
+        } else if (onEnter) {
+          e.preventDefault();
+          onEnter();
+        }
+        break;
+      
+      case 'ArrowUp':
+      case 'ArrowDown':
+        if (onArrowKeys) {
+          e.preventDefault();
+          onArrowKeys(e.key);
+        }
+        break;
+    }
+  };
+
+  const setupModal = () => {
+    document.addEventListener('keydown', handleKeyDown);
+    
+    // 자동 포커스
+    if (focusSelector) {
+      setTimeout(() => {
+        const focusElement = modal.querySelector(focusSelector);
+        if (focusElement) {
+          focusElement.focus();
+        }
+      }, 100);
+    }
+  };
+
+  const cleanupModal = () => {
+    document.removeEventListener('keydown', handleKeyDown);
+  };
+
+  return { setupModal, cleanupModal };
+};
+
 // ==================== 테마 관리 (theme-config.js에서 중앙화) ====================
 
 // ==================== 상태 관리 ====================
@@ -457,14 +520,6 @@ const showInputModal = async (title, message, defaultValue = '') => {
     messageEl.textContent = message;
     inputEl.value = defaultValue;
     modal.style.display = 'block';
-    inputEl.focus();
-
-    const cleanup = () => {
-      modal.style.display = 'none';
-      confirmBtn.removeEventListener('click', onConfirm);
-      cancelBtn.removeEventListener('click', onCancel);
-      closeBtn.removeEventListener('click', onCancel);
-    };
 
     const onConfirm = () => {
       const value = inputEl.value.trim();
@@ -477,9 +532,26 @@ const showInputModal = async (title, message, defaultValue = '') => {
       resolve(null);
     };
 
+    // 키보드 네비게이션 설정
+    const keyboardHandler = createModalKeyboardHandler(modal, {
+      onEscape: onCancel,
+      onEnter: onConfirm,
+      focusSelector: '#map-input-modal-input',
+      confirmButtonSelector: '#map-input-modal-confirm'
+    });
+
+    const cleanup = () => {
+      modal.style.display = 'none';
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      keyboardHandler.cleanupModal();
+    };
+
     confirmBtn.addEventListener('click', onConfirm);
     cancelBtn.addEventListener('click', onCancel);
     closeBtn.addEventListener('click', onCancel);
+    keyboardHandler.setupModal();
   });
 };
 
@@ -491,13 +563,12 @@ const showFieldTypeModal = async () => {
     const typeOptions = modal.querySelectorAll('.map-field-type-option');
 
     modal.style.display = 'block';
+    
+    let selectedIndex = 0; // 방향키 네비게이션용
 
-    const cleanup = () => {
-      modal.style.display = 'none';
-      closeBtn.removeEventListener('click', onCancel);
-      cancelBtn.removeEventListener('click', onCancel);
-      typeOptions.forEach(option => {
-        option.removeEventListener('click', onTypeSelect);
+    const updateSelection = () => {
+      typeOptions.forEach((option, index) => {
+        option.classList.toggle('keyboard-selected', index === selectedIndex);
       });
     };
 
@@ -513,20 +584,49 @@ const showFieldTypeModal = async () => {
       resolve(type);
     };
 
+    const selectCurrentOption = () => {
+      const selectedOption = typeOptions[selectedIndex];
+      if (selectedOption) {
+        const type = selectedOption.getAttribute('data-type');
+        cleanup();
+        resolve(type);
+      }
+    };
+
+    // 키보드 네비게이션 설정
+    const keyboardHandler = createModalKeyboardHandler(modal, {
+      onEscape: onCancel,
+      onEnter: selectCurrentOption,
+      onArrowKeys: (key) => {
+        if (key === 'ArrowDown') {
+          selectedIndex = (selectedIndex + 1) % typeOptions.length;
+        } else if (key === 'ArrowUp') {
+          selectedIndex = selectedIndex === 0 ? typeOptions.length - 1 : selectedIndex - 1;
+        }
+        updateSelection();
+      }
+    });
+
+    const cleanup = () => {
+      modal.style.display = 'none';
+      closeBtn.removeEventListener('click', onCancel);
+      cancelBtn.removeEventListener('click', onCancel);
+      typeOptions.forEach(option => {
+        option.removeEventListener('click', onTypeSelect);
+        option.classList.remove('keyboard-selected');
+      });
+      keyboardHandler.cleanupModal();
+    };
+
     closeBtn.addEventListener('click', onCancel);
     cancelBtn.addEventListener('click', onCancel);
     typeOptions.forEach(option => {
       option.addEventListener('click', onTypeSelect);
     });
-
-    // ESC 키로 모달 닫기
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        document.removeEventListener('keydown', onKeyDown);
-        onCancel();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
+    
+    // 초기 선택 상태 설정
+    updateSelection();
+    keyboardHandler.setupModal();
   });
 };
 
@@ -881,13 +981,16 @@ const init = async () => {
 };
 
 // 메시지 리스너 (테마 업데이트)
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === 'updateTheme') {
     // 커스텀 테마인 경우 CSS를 먼저 재로드
     if (themeManager.isCustomTheme(message.theme)) {
       themeManager.loadCustomThemeStyles();
     }
     themeManager.setTheme(message.theme);
+  } else if (message.action === 'addPlaceFromShortcut') {
+    // 단축키로 장소 추가
+    await addPlace(message.placeData);
   }
 });
 

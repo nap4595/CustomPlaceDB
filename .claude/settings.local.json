@@ -9,7 +9,10 @@
       "WebFetch(domain:developer.chrome.com)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(gh pr create:*)",
+      "WebFetch(domain:support.google.com)"
     ],
     "deny": []
   }
