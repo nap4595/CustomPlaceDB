@@ -2,14 +2,24 @@
 
 // 테마 관리 상수
 const THEME_STORAGE_KEY = 'customplacedb-theme';
+const CUSTOM_THEMES_STORAGE_KEY = 'customplacedb-custom-themes';
 
-// 테마 색상 정의
+// 기본 테마 색상 정의
 const THEME_COLORS = {
   theme1: { main: '#3E3F29', sub: '#F8F7F3', accent: '#BCA88D', border: '#7D8D86' },
   theme2: { main: '#1C352D', sub: '#F9F6F3', accent: '#A6B28B', border: '#F5C9B0' },
   theme3: { main: '#8AA624', sub: '#FFFFF0', accent: '#DBE4C9', border: '#FEA405' },
   theme4: { main: '#663399', sub: '#F8F4FF', accent: '#9966CC', border: '#D1C4E9' },
   theme5: { main: '#5B6BC0', sub: '#E8EAF6', accent: '#9FA8DA', border: '#7986CB' }
+};
+
+// 기본 테마 이름
+const THEME_NAMES = {
+  theme1: '올리브 그린',
+  theme2: '포레스트 그린', 
+  theme3: '스프링 라임',
+  theme4: '바이올렛 퍼플',
+  theme5: '라벤더 블루'
 };
 
 // 테마 관리자 객체
@@ -40,16 +50,139 @@ const themeManager = {
   },
   
   getAllThemes() {
-    return Object.keys(THEME_COLORS);
+    const customThemes = this.getCustomThemes();
+    return [...Object.keys(THEME_COLORS), ...Object.keys(customThemes)];
   },
   
   getThemeColors(theme) {
-    return THEME_COLORS[theme] || THEME_COLORS.theme1;
+    // 먼저 기본 테마에서 확인
+    if (THEME_COLORS[theme]) {
+      return THEME_COLORS[theme];
+    }
+    
+    // 커스텀 테마에서 확인
+    const customThemes = this.getCustomThemes();
+    if (customThemes[theme]) {
+      return customThemes[theme].colors;
+    }
+    
+    return THEME_COLORS.theme1;
+  },
+  
+  getThemeName(theme) {
+    if (THEME_NAMES[theme]) {
+      return THEME_NAMES[theme];
+    }
+    
+    const customThemes = this.getCustomThemes();
+    if (customThemes[theme]) {
+      return customThemes[theme].name;
+    }
+    
+    return '알 수 없는 테마';
+  },
+  
+  isCustomTheme(theme) {
+    return !THEME_COLORS[theme];
+  },
+  
+  // 커스텀 테마 관리
+  getCustomThemes() {
+    try {
+      const stored = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error('커스텀 테마 로드 실패:', error);
+      return {};
+    }
+  },
+  
+  saveCustomTheme(name, colors) {
+    if (!this.validateColors(colors)) {
+      throw new Error('유효하지 않은 색상 형식입니다.');
+    }
+    
+    const customThemes = this.getCustomThemes();
+    const themeId = `custom_${Date.now()}`;
+    
+    customThemes[themeId] = {
+      name: name || '커스텀 테마',
+      colors: colors,
+      created: new Date().toISOString()
+    };
+    
+    try {
+      localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
+      
+      // CSS 스타일 동적 생성
+      this.createThemeCSS(themeId, colors);
+      
+      return themeId;
+    } catch (error) {
+      console.error('커스텀 테마 저장 실패:', error);
+      throw new Error('테마 저장에 실패했습니다.');
+    }
+  },
+  
+  deleteCustomTheme(themeId) {
+    if (!this.isCustomTheme(themeId)) {
+      throw new Error('기본 테마는 삭제할 수 없습니다.');
+    }
+    
+    const customThemes = this.getCustomThemes();
+    if (customThemes[themeId]) {
+      delete customThemes[themeId];
+      localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
+      
+      // CSS 스타일 제거
+      const styleElement = document.getElementById(`theme-${themeId}`);
+      if (styleElement) {
+        styleElement.remove();
+      }
+      
+      return true;
+    }
+    return false;
+  },
+  
+  createThemeCSS(themeId, colors) {
+    const mainRgb = hexToRgb(colors.main);
+    if (!mainRgb) return false;
+    
+    // 기존 스타일 제거
+    const existingStyle = document.getElementById(`theme-${themeId}`);
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // 새로운 스타일 생성
+    const style = document.createElement('style');
+    style.id = `theme-${themeId}`;
+    style.textContent = `
+      [data-theme="${themeId}"] {
+        --primary-color: ${colors.main};
+        --primary-color-rgb: ${mainRgb.r}, ${mainRgb.g}, ${mainRgb.b};
+        --secondary-color: ${colors.sub};
+        --accent-color: ${colors.accent};
+        --background-color: ${colors.border};
+        --text-color: ${getContrastColor(colors.main)};
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return true;
+  },
+  
+  validateColors(colors) {
+    const required = ['main', 'sub', 'accent', 'border'];
+    return required.every(key => {
+      return colors[key] && /^#[0-9A-F]{6}$/i.test(colors[key]);
+    });
   },
   
   // 테마 적용 검증
   validateThemeApplied(theme) {
-    const expectedColors = THEME_COLORS[theme];
+    const expectedColors = this.getThemeColors(theme);
     if (!expectedColors) return false;
     
     const computedStyle = getComputedStyle(document.body);
@@ -135,6 +268,9 @@ const themeManager = {
       console.error('Theme integrity check failed');
     }
     
+    // 저장된 커스텀 테마들을 CSS로 로드
+    this.loadCustomThemeStyles();
+    
     const currentTheme = this.getCurrentTheme();
     document.body.setAttribute('data-theme', currentTheme);
     
@@ -146,6 +282,14 @@ const themeManager = {
     }, 100);
     
     return currentTheme;
+  },
+  
+  // 저장된 커스텀 테마 스타일들을 로드
+  loadCustomThemeStyles() {
+    const customThemes = this.getCustomThemes();
+    Object.keys(customThemes).forEach(themeId => {
+      this.createThemeCSS(themeId, customThemes[themeId].colors);
+    });
   }
 };
 

@@ -3,18 +3,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   setupEventListeners();
   checkNaverMapTab();
+  loadFavoritePlaces();
 });
 
 // 테마 초기화 함수 (theme-config.js에서 제공되는 themeManager 사용)
 function initTheme() {
   const currentTheme = themeManager.init();
   
-  // 테마 선택기 설정
+  // 테마 선택기 업데이트 (기본 + 커스텀 테마)
+  updateThemeSelector();
+  
+  // 현재 테마 설정
   const themeSelect = document.getElementById('theme-select');
   if (themeSelect) {
     themeSelect.value = currentTheme;
     updateThemePreview(currentTheme);
   }
+}
+
+// 테마 선택기 옵션 업데이트
+function updateThemeSelector() {
+  const themeSelect = document.getElementById('theme-select');
+  if (!themeSelect) return;
+  
+  // 기존 옵션 제거 (기본 테마는 유지)
+  const customOptions = themeSelect.querySelectorAll('option[data-custom="true"]');
+  customOptions.forEach(option => option.remove());
+  
+  // 커스텀 테마 추가
+  const customThemes = themeManager.getCustomThemes();
+  Object.keys(customThemes).forEach(themeId => {
+    const option = document.createElement('option');
+    option.value = themeId;
+    option.textContent = `${customThemes[themeId].name} (커스텀)`;
+    option.setAttribute('data-custom', 'true');
+    themeSelect.appendChild(option);
+  });
 }
 
 async function loadStats() {
@@ -51,6 +75,7 @@ function setupEventListeners() {
   document.getElementById('theme-select').addEventListener('change', (e) => {
     const selectedTheme = e.target.value;
     themeManager.setTheme(selectedTheme);
+    updateThemePreview(selectedTheme);
     
     // 사이드패널도 동시에 업데이트
     chrome.runtime.sendMessage({
@@ -58,6 +83,14 @@ function setupEventListeners() {
       theme: selectedTheme
     });
   });
+  
+  // 커스텀 테마 추가 버튼
+  document.getElementById('add-custom-theme').addEventListener('click', () => {
+    showCustomThemeModal();
+  });
+  
+  // 커스텀 테마 모달 이벤트들
+  setupCustomThemeModalEvents();
   
   document.getElementById('export-data').addEventListener('click', () => {
     showExportModal();
@@ -478,3 +511,226 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     loadStats();
   }
 });
+
+// ==================== 커스텀 테마 관리 ====================
+
+// 커스텀 테마 모달 표시
+function showCustomThemeModal() {
+  resetCustomThemeModal();
+  document.getElementById('custom-theme-modal').style.display = 'flex';
+}
+
+// 커스텀 테마 모달 숨기기
+function hideCustomThemeModal() {
+  document.getElementById('custom-theme-modal').style.display = 'none';
+}
+
+// 커스텀 테마 모달 초기화
+function resetCustomThemeModal() {
+  document.getElementById('custom-theme-name').value = '';
+  document.getElementById('custom-main-color').value = '#3E3F29';
+  document.getElementById('custom-sub-color').value = '#F8F7F3';
+  document.getElementById('custom-accent-color').value = '#BCA88D';
+  document.getElementById('custom-border-color').value = '#7D8D86';
+  
+  document.getElementById('custom-main-picker').value = '#3E3F29';
+  document.getElementById('custom-sub-picker').value = '#F8F7F3';
+  document.getElementById('custom-accent-picker').value = '#BCA88D';
+  document.getElementById('custom-border-picker').value = '#7D8D86';
+  
+  updateCustomThemePreview();
+}
+
+// 커스텀 테마 모달 이벤트 설정
+function setupCustomThemeModalEvents() {
+  // 저장 버튼
+  document.getElementById('save-custom-theme').addEventListener('click', saveCustomTheme);
+  
+  // 취소 버튼
+  document.getElementById('cancel-custom-theme').addEventListener('click', hideCustomThemeModal);
+  
+  // 색상 입력 필드와 피커 연동
+  setupColorInputSync('custom-main-color', 'custom-main-picker', 'custom-main-preview');
+  setupColorInputSync('custom-sub-color', 'custom-sub-picker', 'custom-sub-preview');
+  setupColorInputSync('custom-accent-color', 'custom-accent-picker', 'custom-accent-preview');
+  setupColorInputSync('custom-border-color', 'custom-border-picker', 'custom-border-preview');
+}
+
+// 색상 입력과 피커 동기화 설정
+function setupColorInputSync(inputId, pickerId, previewId) {
+  const input = document.getElementById(inputId);
+  const picker = document.getElementById(pickerId);
+  const preview = document.getElementById(previewId);
+  
+  // 텍스트 입력 -> 피커 & 미리보기 업데이트
+  input.addEventListener('input', (e) => {
+    const color = e.target.value;
+    if (isValidHexColor(color)) {
+      picker.value = color;
+      preview.style.backgroundColor = color;
+      input.style.borderColor = '';
+    } else {
+      input.style.borderColor = 'red';
+    }
+  });
+  
+  // 피커 -> 텍스트 입력 & 미리보기 업데이트
+  picker.addEventListener('input', (e) => {
+    const color = e.target.value;
+    input.value = color;
+    preview.style.backgroundColor = color;
+    input.style.borderColor = '';
+  });
+}
+
+// 커스텀 테마 미리보기 업데이트
+function updateCustomThemePreview() {
+  document.getElementById('custom-main-preview').style.backgroundColor = document.getElementById('custom-main-color').value;
+  document.getElementById('custom-sub-preview').style.backgroundColor = document.getElementById('custom-sub-color').value;
+  document.getElementById('custom-accent-preview').style.backgroundColor = document.getElementById('custom-accent-color').value;
+  document.getElementById('custom-border-preview').style.backgroundColor = document.getElementById('custom-border-color').value;
+}
+
+// 커스텀 테마 저장
+async function saveCustomTheme() {
+  const name = document.getElementById('custom-theme-name').value.trim();
+  const colors = {
+    main: document.getElementById('custom-main-color').value,
+    sub: document.getElementById('custom-sub-color').value,
+    accent: document.getElementById('custom-accent-color').value,
+    border: document.getElementById('custom-border-color').value
+  };
+  
+  // 유효성 검사
+  if (!name) {
+    alert('테마 이름을 입력해주세요.');
+    return;
+  }
+  
+  if (!Object.values(colors).every(color => isValidHexColor(color))) {
+    alert('모든 색상을 올바른 형식(#RRGGBB)으로 입력해주세요.');
+    return;
+  }
+  
+  try {
+    const themeId = themeManager.saveCustomTheme(name, colors);
+    
+    // 테마 선택기 업데이트
+    updateThemeSelector();
+    
+    // 새로 생성된 테마로 전환
+    const themeSelect = document.getElementById('theme-select');
+    themeSelect.value = themeId;
+    themeManager.setTheme(themeId);
+    updateThemePreview(themeId);
+    
+    // 사이드패널도 업데이트
+    chrome.runtime.sendMessage({
+      action: 'updateTheme',
+      theme: themeId
+    });
+    
+    hideCustomThemeModal();
+    await showMessage(`커스텀 테마 '${name}'이 생성되었습니다!`);
+    
+  } catch (error) {
+    console.error('커스텀 테마 저장 실패:', error);
+    alert(error.message || '테마 저장에 실패했습니다.');
+  }
+}
+
+// HEX 색상 코드 유효성 검사
+function isValidHexColor(color) {
+  return /^#[0-9A-F]{6}$/i.test(color);
+}
+
+// ==================== 즐겨찾기 관리 ====================
+
+// 즐겨찾기 장소 로드 및 표시
+async function loadFavoritePlaces() {
+  try {
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const data = result.mapScraperData || {};
+    
+    // 모든 장소를 수집하고 즐겨찾기 표시가 된 것들만 필터링
+    const favoritePlaces = [];
+    Object.values(data).forEach(list => {
+      if (list.places && list.places.length > 0) {
+        list.places.forEach(place => {
+          if (place.isFavorite) {
+            favoritePlaces.push({
+              ...place,
+              listName: list.name
+            });
+          }
+        });
+      }
+    });
+    
+    displayFavoritePlaces(favoritePlaces);
+    
+  } catch (error) {
+    console.error('즐겨찾기 로드 실패:', error);
+  }
+}
+
+// 즐겨찾기 장소 화면에 표시
+function displayFavoritePlaces(favoritePlaces) {
+  const container = document.getElementById('favorite-places');
+  if (!container) return;
+  
+  if (favoritePlaces.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: var(--accent-color); margin-top: 20px; font-size: 11px;">아직 즐겨찾기한 장소가 없습니다</p>';
+    return;
+  }
+  
+  // 최대 5개까지만 표시
+  const displayPlaces = favoritePlaces.slice(0, 5);
+  
+  container.innerHTML = displayPlaces.map(place => `
+    <div class="favorite-item" onclick="openPlaceInMap('${place.url || ''}', '${place.platform || 'naver'}')">
+      <div class="favorite-name">${place.name || '알 수 없는 장소'}</div>
+      <div class="favorite-address">${place.listName || ''}</div>
+    </div>
+  `).join('');
+}
+
+// 지도에서 장소 열기
+function openPlaceInMap(url, platform) {
+  if (!url) {
+    // URL이 없으면 해당 플랫폼의 기본 지도 페이지로 이동
+    if (platform === 'kakao') {
+      chrome.tabs.create({ url: 'https://map.kakao.com' });
+    } else {
+      chrome.tabs.create({ url: 'https://map.naver.com' });
+    }
+    return;
+  }
+  
+  chrome.tabs.create({ url });
+}
+
+// 즐겨찾기 토글 함수 (sidepanel에서 사용할 수 있도록 전역으로 노출)
+window.toggleFavorite = async function(listId, placeId) {
+  try {
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const data = result.mapScraperData || {};
+    
+    if (data[listId] && data[listId].places) {
+      const place = data[listId].places.find(p => p.id === placeId);
+      if (place) {
+        place.isFavorite = !place.isFavorite;
+        await chrome.storage.local.set({ mapScraperData: data });
+        
+        // 즐겨찾기 목록 새로고침
+        loadFavoritePlaces();
+        
+        return place.isFavorite;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('즐겨찾기 토글 실패:', error);
+    return false;
+  }
+};
