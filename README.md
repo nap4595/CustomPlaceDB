@@ -12,7 +12,6 @@
 
 ### 🆕 Chrome Side Panel API (v2.0)
 - **네이티브 사이드 패널**: Chrome 공식 Side Panel API 사용으로 안정성과 성능 향상
-- **키보드 단축키**: `Ctrl+Shift+P`로 사이드 패널 토글
 - **우클릭 메뉴**: 컨텍스트 메뉴로 빠른 장소 저장
 - **시스템 알림**: Chrome 알림 API로 작업 완료 알림
 - **원클릭 접근**: 툴바 아이콘 클릭으로 즉시 패널 열기/닫기
@@ -65,9 +64,8 @@
 ### 1️⃣ 지도 서비스 접속
 툴바의 CustomPlaceDB 아이콘을 클릭하여 설정 창에서 네이버지도, 카카오맵 중 선택
 
-### 2️⃣ Side Panel 열기 (3가지 방법)
+### 2️⃣ Side Panel 열기 (2가지 방법)
 - **툴바 아이콘 클릭**: CustomPlaceDB 아이콘을 한 번 클릭하면 Side Panel이 열림
-- **키보드 단축키**: `Ctrl+Shift+P`로 패널 토글
 - **우클릭 메뉴**: 지도 페이지에서 우클릭 → '현재 장소 저장하기'
 
 ### 3️⃣ 장소 선택 및 저장
@@ -127,7 +125,6 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
 - **Chrome Storage API** - 로컬 데이터 저장
 - **Chrome Notifications API** - 시스템 알림
 - **Chrome Context Menus API** - 우클릭 메뉴
-- **Chrome Commands API** - 키보드 단축키
 - **Chrome Tabs API** - 탭 관리
 
 ### Frontend
@@ -160,7 +157,6 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
   - 네이티브 브라우저 Side Panel로 안정성과 성능 대폭 향상
   - 툴바 아이콘 클릭으로 패널 열기/닫기 원터치 지원
   - 브라우저 창 크기에 관계없이 일정한 패널 영역 확보
-- ⌨️ **키보드 단축키 지원**: `Ctrl+Shift+P`로 Side Panel 토글
 - 🖱️ **우클릭 컨텍스트 메뉴**: 지도 페이지에서 우클릭으로 빠른 장소 저장
 - 🔔 **시스템 알림**: Chrome Notifications API로 작업 완료 피드백
 - 🎨 **커스텀 테마 시스템**: 5가지 기본 테마 + 사용자 정의 테마 생성 기능

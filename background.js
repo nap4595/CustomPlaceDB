@@ -16,19 +16,6 @@ chrome.runtime.onInstalled.addListener(() => {
 // ==================== Side Panel 관리 ====================
 // Side Panel은 setPanelBehavior({ openPanelOnActionClick: true })로 자동 처리됨
 
-// 키보드 단축키 처리
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command === 'toggle-side-panel') {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
-    // Side Panel 열기/닫기
-    try {
-      await chrome.sidePanel.open({ tabId: tab.id });
-    } catch (error) {
-      console.error('Side Panel 토글 실패:', error);
-    }
-  }
-});
 
 // ==================== 컨텍스트 메뉴 관리 ====================
 function createContextMenus() {
