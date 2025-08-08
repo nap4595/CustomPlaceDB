@@ -78,7 +78,7 @@
             <ul>
                 <li><strong>장소 정보 저장 서비스 제공</strong>: 사용자가 선택한 지도상의 장소를 개인 데이터베이스에 저장</li>
                 <li><strong>개인화된 메모 및 분류 기능</strong>: 사용자가 입력한 메모, 커스텀 필드를 통한 장소 분류</li>
-                <li><strong>다중 플랫폼 지원</strong>: 네이버지도, 카카오맵, 구글지도에서의 일관된 서비스 제공</li>
+                <li><strong>다중 플랫폼 지원</strong>: 네이버지도, 카카오맵에서의 일관된 서비스 제공</li>
                 <li><strong>데이터 백업 및 복원</strong>: 사용자 데이터의 내보내기/가져오기 기능</li>
             </ul>
         </div>
@@ -91,6 +91,7 @@
                 <li><strong>장소 정보</strong>: 장소명, 주소, 카테고리, 별점, URL</li>
                 <li><strong>사용자 입력 정보</strong>: 메모, 커스텀 필드 값, 목록 이름</li>
                 <li><strong>기술적 정보</strong>: 현재 방문 중인 지도 서비스 플랫폼 정보</li>
+                <li><strong>앱 메타데이터</strong>: 데이터 내보내기 시 포함되는 버전 정보, 내보내기 날짜 (v1.3)</li>
             </ul>
 
             <h3>2.2 수집하지 않는 정보</h3>
@@ -110,6 +111,7 @@
                 <li><strong>로컬 저장</strong>: 모든 데이터는 사용자의 Chrome 브라우저 내부에만 저장됩니다</li>
                 <li><strong>외부 전송 없음</strong>: 수집된 정보는 외부 서버로 전송되지 않습니다</li>
                 <li><strong>암호화</strong>: Chrome의 기본 보안 정책에 따라 보호됩니다</li>
+                <li><strong>프로덕션 보안</strong>: v1.3부터 엔터프라이즈급 보안 정책 적용 (2025.7.31)</li>
             </ul>
 
             <h3>3.2 데이터 보유 기간</h3>
@@ -127,6 +129,9 @@
                 <li><strong>데이터 크기 제한</strong>: 입력 데이터의 길이 제한으로 오남용 방지</li>
                 <li><strong>로컬 저장소 활용</strong>: Chrome Storage API의 보안 정책 적용</li>
                 <li><strong>권한 최소화</strong>: 필요한 최소한의 브라우저 권한만 요청</li>
+                <li><strong>방어적 프로그래밍</strong>: v1.3부터 안전한 에러 처리 및 기본값 설정 (2025.7.31)</li>
+                <li><strong>프로덕션 로깅</strong>: 개발 모드와 프로덕션 모드 분리로 민감정보 보호 강화</li>
+                <li><strong>설정 중앙화</strong>: CONFIG 패턴을 통한 보안 정책 일관성 확보 및 설정 관리 개선 (v1.3)</li>
             </ul>
         </div>
 
@@ -167,7 +172,7 @@
 
         <div class="date">
             <strong>시행일자</strong>: 2025년 7월 26일<br>
-            <strong>최종 수정일</strong>: 2025년 7월 26일
+            <strong>최종 수정일</strong>: 2025년 7월 31일 (v1.3)
         </div>
     </div>
 </body>

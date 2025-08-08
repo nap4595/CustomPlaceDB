@@ -1,8 +1,25 @@
 // 지도 장소 스크랩 Background Script
 
+// 설정 상수
+const CONFIG = {
+  STORAGE_KEYS: {
+    MAIN_DATA: 'mapScraperData'
+  }
+};
+
+// 디버그 모드 설정
+const DEBUG_MODE = false; // 프로덕션에서는 false
+
+// 로깅 유틸리티
+const Logger = {
+  log: (...args) => DEBUG_MODE && console.log('[CustomPlaceDB Background]', ...args),
+  error: (...args) => console.error('[CustomPlaceDB Background Error]', ...args),
+  warn: (...args) => DEBUG_MODE && console.warn('[CustomPlaceDB Background Warning]', ...args)
+};
+
 // ==================== 초기화 ====================
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('지도 장소 스크랩 익스텐션이 설치되었습니다.');
+  Logger.log('지도 장소 스크랩 익스텐션이 설치되었습니다.');
   
   // Side Panel 설정
   chrome.sidePanel
@@ -130,7 +147,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'fetchPlaceInfo') {
-    console.log('Background script에서 API 호출:', request.url);
+    Logger.log('API 호출:', request.url);
     
     fetch(request.url, {
       method: 'GET',
@@ -149,11 +166,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return response.text();
     })
     .then(html => {
-      console.log('Background script API 응답 성공');
+      Logger.log('API 응답 성공');
       sendResponse({ success: true, data: html });
     })
     .catch(error => {
-      console.error('Background script API 오류:', error);
+      Logger.error('API 오류:', error);
       sendResponse({ success: false, error: error.message });
     });
     
@@ -175,5 +192,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // for async response
   }
 });
-
 

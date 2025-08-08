@@ -1,6 +1,37 @@
 // 지도 장소 스크랩 Content Script - 리팩토링 버전
 // 데이터 수집 및 통신만 담당, UI 로직은 Side Panel로 이전
 
+// 설정 상수
+const CONFIG = {
+  PLATFORMS: {
+    NAVER: 'naver',
+    KAKAO: 'kakao',
+    UNKNOWN: 'unknown'
+  },
+  PLATFORM_COLORS: {
+    naver: '#03c75a',
+    kakao: '#FFE300',
+    default: '#666666'
+  },
+  PLATFORM_NAMES: {
+    naver: '네이버지도',
+    kakao: '카카오맵'
+  },
+  STORAGE_KEYS: {
+    MAIN_DATA: 'mapScraperData'
+  }
+};
+
+// 디버그 모드 설정 (프로덕션에서는 false로 설정)
+const DEBUG_MODE = false;
+
+// 로깅 유틸리티
+const Logger = {
+  log: (...args) => DEBUG_MODE && console.log('[CustomPlaceDB]', ...args),
+  error: (...args) => console.error('[CustomPlaceDB Error]', ...args),
+  warn: (...args) => DEBUG_MODE && console.warn('[CustomPlaceDB Warning]', ...args)
+};
+
 // ==================== 플랫폼 감지 클래스 ====================
 class PlatformDetector {
   static detectCurrentPlatform() {
@@ -8,32 +39,24 @@ class PlatformDetector {
     const pathname = window.location.pathname;
     
     if (hostname.includes('naver.com') && (pathname.includes('/map') || hostname.includes('map.naver.com'))) {
-      return 'naver';
+      return CONFIG.PLATFORMS.NAVER;
     } else if (hostname.includes('kakao.com')) {
-      return 'kakao';
+      return CONFIG.PLATFORMS.KAKAO;
     }
     
-    return 'unknown';
+    return CONFIG.PLATFORMS.UNKNOWN;
   }
   
   static getSupportedPlatforms() {
-    return ['naver', 'kakao'];
+    return [CONFIG.PLATFORMS.NAVER, CONFIG.PLATFORMS.KAKAO];
   }
   
   static getPlatformDisplayName(platform) {
-    const displayNames = {
-      'naver': '네이버지도',
-      'kakao': '카카오맵'
-    };
-    return displayNames[platform] || platform;
+    return CONFIG.PLATFORM_NAMES[platform] || platform;
   }
   
   static getPlatformColor(platform) {
-    const colors = {
-      'naver': '#03c75a',
-      'kakao': '#FFE300'
-    };
-    return colors[platform] || '#666666';
+    return CONFIG.PLATFORM_COLORS[platform] || CONFIG.PLATFORM_COLORS.default;
   }
 }
 
@@ -86,7 +109,7 @@ class NaverMapExtractor extends BaseMapExtractor {
         customValues: {}
       };
     } catch (error) {
-      console.error('네이버지도 데이터 추출 실패:', error);
+      Logger.error('네이버지도 데이터 추출 실패:', error);
       return null;
     }
   }
@@ -109,7 +132,7 @@ class NaverMapExtractor extends BaseMapExtractor {
       }
       return null;
     } catch (error) {
-      console.error('네이버지도 API 요청 실패:', error);
+      Logger.error('네이버지도 API 요청 실패:', error);
       return null;
     }
   }
@@ -181,7 +204,7 @@ class KakaoMapExtractor extends BaseMapExtractor {
         customValues: {}
       };
     } catch (error) {
-      console.error('카카오맵 데이터 추출 실패:', error);
+      Logger.error('카카오맵 데이터 추출 실패:', error);
       return null;
     }
   }
@@ -224,7 +247,7 @@ class ExtractorFactory {
       case 'kakao':
         return new KakaoMapExtractor();
       default:
-        console.log('지원하지 않는 플랫폼입니다:', targetPlatform);
+        Logger.warn('지원하지 않는 플랫폼입니다:', targetPlatform);
         return null;
     }
   }
@@ -284,6 +307,7 @@ class ContentScriptController {
     }
   }
 
+  // ==================== 옵저버 설정 ====================
   startObserving() {
     // URL 변경 감지
     let currentURL = window.location.href;
