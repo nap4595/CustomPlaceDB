@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CustomPlaceDB - Side Panel</title>
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+    <div class="map-list-manager">
+        <div class="map-list-display">
+            <select class="map-list-select" id="map-list-select">
+                <option value="">목록이 없습니다</option>
+            </select>
+        </div>
+        <div class="map-all-controls">
+            <button class="map-list-btn map-add-list-btn" id="map-add-list-btn">새 목록</button>
+            <button class="map-list-btn" id="map-edit-list-btn">수정</button>
+            <button class="map-list-btn" id="map-delete-list-btn">삭제</button>
+            <button class="map-list-btn" id="map-manage-fields-btn">필드</button>
+            <button class="map-settings-btn" id="map-settings-btn" title="설정 열기">⚙️</button>
+        </div>
+        <button class="map-add-current-btn" id="map-add-current-btn">
+            현재 보고 있는 장소 추가
+        </button>
+    </div>
+    <div class="map-places-container" id="map-places-container">
+        <div class="map-empty-state">
+            <p>저장된 장소가 없습니다.</p>
+            <p>지도에서 장소를 클릭하고 추가해보세요!</p>
+        </div>
+    </div>
+
+    <!-- 커스텀 필드 관리 모달 -->
+    <div class="map-modal" id="map-fields-modal" style="display: none;">
+        <div class="map-modal-content">
+            <div class="map-modal-header">
+                <h3>커스텀 필드 설정</h3>
+                <button class="map-modal-close" id="map-fields-modal-close">×</button>
+            </div>
+            <div class="map-modal-body">
+                <div class="map-fields-list" id="map-fields-list">
+                    <!-- 필드 목록이 여기에 렌더링됨 -->
+                </div>
+                <button class="map-add-field-btn" id="map-add-field-btn">새 필드 추가</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 입력 모달 -->
+    <div class="map-modal" id="map-input-modal" style="display: none;">
+        <div class="map-modal-content">
+            <div class="map-modal-header">
+                <h3 id="map-input-modal-title">입력</h3>
+                <button class="map-modal-close" id="map-input-modal-close">×</button>
+            </div>
+            <div class="map-modal-body">
+                <p id="map-input-modal-message"></p>
+                <input type="text" id="map-input-modal-input" class="map-input-field" />
+                <div class="map-modal-buttons">
+                    <button class="map-btn map-btn-primary" id="map-input-modal-confirm">확인</button>
+                    <button class="map-btn map-btn-secondary" id="map-input-modal-cancel">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 필드 타입 선택 모달 -->
+    <div class="map-modal" id="map-field-type-modal" style="display: none;">
+        <div class="map-modal-content">
+            <div class="map-modal-header">
+                <h3>필드 타입 선택</h3>
+                <button class="map-modal-close" id="map-field-type-modal-close">×</button>
+            </div>
+            <div class="map-modal-body">
+                <p>생성할 필드의 타입을 선택하세요:</p>
+                <div class="map-field-type-options">
+                    <div class="map-field-type-option" data-type="text">
+                        <div class="map-field-type-icon">📝</div>
+                        <div class="map-field-type-info">
+                            <h4>텍스트형</h4>
+                            <p>자유롭게 텍스트를 입력할 수 있는 필드</p>
+                        </div>
+                    </div>
+                    <div class="map-field-type-option" data-type="select">
+                        <div class="map-field-type-icon">📋</div>
+                        <div class="map-field-type-info">
+                            <h4>선택형</h4>
+                            <p>미리 정의된 옵션 중에서 선택하는 필드</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="map-modal-buttons">
+                    <button class="map-btn map-btn-secondary" id="map-field-type-cancel">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="theme-config.js"></script>
+    <script src="sidepanel.js"></script>
+</body>
+</html>

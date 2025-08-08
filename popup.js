@@ -17,9 +17,46 @@ const Logger = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStats();
+  initTheme();
   setupEventListeners();
   checkNaverMapTab();
+  loadFavoritePlaces();
 });
+
+// 테마 초기화 함수 (theme-config.js에서 제공되는 themeManager 사용)
+function initTheme() {
+  const currentTheme = themeManager.init();
+  
+  // 테마 선택기 업데이트 (기본 + 커스텀 테마)
+  updateThemeSelector();
+  
+  // 현재 테마 설정
+  const themeSelect = document.getElementById('theme-select');
+  if (themeSelect) {
+    themeSelect.value = currentTheme;
+    updateThemePreview(currentTheme);
+  }
+}
+
+// 테마 선택기 옵션 업데이트
+function updateThemeSelector() {
+  const themeSelect = document.getElementById('theme-select');
+  if (!themeSelect) return;
+  
+  // 기존 옵션 제거 (기본 테마는 유지)
+  const customOptions = themeSelect.querySelectorAll('option[data-custom="true"]');
+  customOptions.forEach(option => option.remove());
+  
+  // 커스텀 테마 추가
+  const customThemes = themeManager.getCustomThemes();
+  Object.keys(customThemes).forEach(themeId => {
+    const option = document.createElement('option');
+    option.value = themeId;
+    option.textContent = `${customThemes[themeId].name} (커스텀)`;
+    option.setAttribute('data-custom', 'true');
+    themeSelect.appendChild(option);
+  });
+}
 
 async function loadStats() {
   try {
@@ -51,6 +88,26 @@ function setupEventListeners() {
     });
   });
   
+  // 테마 선택 이벤트
+  document.getElementById('theme-select').addEventListener('change', (e) => {
+    const selectedTheme = e.target.value;
+    themeManager.setTheme(selectedTheme);
+    updateThemePreview(selectedTheme);
+    
+    // 사이드패널도 동시에 업데이트
+    chrome.runtime.sendMessage({
+      action: 'updateTheme',
+      theme: selectedTheme
+    });
+  });
+  
+  // 커스텀 테마 관리 버튼
+  document.getElementById('manage-custom-theme').addEventListener('click', () => {
+    showCustomThemeManagementModal();
+  });
+  
+  // 커스텀 테마 모달 이벤트들
+  setupCustomThemeModalEvents();
   
   document.getElementById('export-data').addEventListener('click', () => {
     showExportModal();
@@ -105,6 +162,48 @@ function hideExportModal() {
 }
 
 function setupExportModalEventListeners() {
+  const modal = document.getElementById('export-modal');
+  let selectedIndex = 0;
+  const options = ['export-json', 'export-csv'];
+
+  const updateSelection = () => {
+    options.forEach((optionId, index) => {
+      const element = document.getElementById(optionId);
+      element.classList.toggle('keyboard-selected', index === selectedIndex);
+    });
+  };
+
+  const selectCurrentOption = () => {
+    const selectedId = options[selectedIndex];
+    document.getElementById(selectedId).click();
+  };
+
+  // 키보드 네비게이션 핸들러
+  const handleKeyDown = (e) => {
+    if (modal.style.display === 'none') return;
+
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        hideExportModal();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        selectCurrentOption();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % options.length;
+        updateSelection();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        selectedIndex = selectedIndex === 0 ? options.length - 1 : selectedIndex - 1;
+        updateSelection();
+        break;
+    }
+  };
+
   document.getElementById('export-json').addEventListener('click', async () => {
     hideExportModal();
     await exportDataAsJSON();
@@ -120,14 +219,76 @@ function setupExportModalEventListeners() {
   });
   
   // 모달 배경 클릭 시 닫기
-  document.getElementById('export-modal').addEventListener('click', (e) => {
+  modal.addEventListener('click', (e) => {
     if (e.target.id === 'export-modal') {
       hideExportModal();
     }
   });
+
+  // 모달 표시될 때 키보드 이벤트 추가
+  const originalShowExportModal = window.showExportModal;
+  window.showExportModal = () => {
+    originalShowExportModal();
+    selectedIndex = 0;
+    updateSelection();
+    document.addEventListener('keydown', handleKeyDown);
+  };
+
+  // 모달 숨길 때 키보드 이벤트 제거
+  const originalHideExportModal = window.hideExportModal;
+  window.hideExportModal = () => {
+    document.removeEventListener('keydown', handleKeyDown);
+    options.forEach(optionId => {
+      document.getElementById(optionId).classList.remove('keyboard-selected');
+    });
+    originalHideExportModal();
+  };
 }
 
 function setupImportModalEventListeners() {
+  const modal = document.getElementById('import-modal');
+  let selectedIndex = 0;
+  const options = ['import-merge', 'import-replace'];
+
+  const updateSelection = () => {
+    options.forEach((optionId, index) => {
+      const element = document.getElementById(optionId);
+      element.classList.toggle('keyboard-selected', index === selectedIndex);
+    });
+  };
+
+  const selectCurrentOption = () => {
+    const selectedId = options[selectedIndex];
+    document.getElementById(selectedId).click();
+  };
+
+  // 키보드 네비게이션 핸들러
+  const handleKeyDown = (e) => {
+    if (modal.style.display === 'none') return;
+
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        hideImportModal();
+        document.getElementById('file-input').value = '';
+        break;
+      case 'Enter':
+        e.preventDefault();
+        selectCurrentOption();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % options.length;
+        updateSelection();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        selectedIndex = selectedIndex === 0 ? options.length - 1 : selectedIndex - 1;
+        updateSelection();
+        break;
+    }
+  };
+
   document.getElementById('import-merge').addEventListener('click', () => {
     hideImportModal();
     handleImportChoice('merge');
@@ -140,17 +301,35 @@ function setupImportModalEventListeners() {
   
   document.getElementById('import-cancel').addEventListener('click', () => {
     hideImportModal();
-    // 파일 입력 초기화
     document.getElementById('file-input').value = '';
   });
   
   // 모달 배경 클릭 시 닫기
-  document.getElementById('import-modal').addEventListener('click', (e) => {
+  modal.addEventListener('click', (e) => {
     if (e.target.id === 'import-modal') {
       hideImportModal();
       document.getElementById('file-input').value = '';
     }
   });
+
+  // 모달 표시될 때 키보드 이벤트 추가
+  const originalShowImportModal = window.showImportModal;
+  window.showImportModal = () => {
+    originalShowImportModal();
+    selectedIndex = 0;
+    updateSelection();
+    document.addEventListener('keydown', handleKeyDown);
+  };
+
+  // 모달 숨길 때 키보드 이벤트 제거
+  const originalHideImportModal = window.hideImportModal;
+  window.hideImportModal = () => {
+    document.removeEventListener('keydown', handleKeyDown);
+    options.forEach(optionId => {
+      document.getElementById(optionId).classList.remove('keyboard-selected');
+    });
+    originalHideImportModal();
+  };
 }
 
 function showImportModal() {
@@ -417,7 +596,7 @@ async function clearAllData() {
 
 // ==================== 유틸리티 ====================
 async function showMessage(message) {
-  const platformColor = await getCurrentPlatformColor();
+  const themeColor = getComputedStyle(document.body).getPropertyValue('--primary-color').trim() || '#3E3F29';
   
   const messageDiv = document.createElement('div');
   messageDiv.style.cssText = `
@@ -430,7 +609,7 @@ async function showMessage(message) {
     font-size: 12px;
     font-weight: bold;
     z-index: 1000;
-    background-color: ${platformColor};
+    background-color: ${themeColor};
     color: white;
   `;
   messageDiv.textContent = message;
@@ -443,31 +622,497 @@ async function showMessage(message) {
   }, 3000);
 }
 
-async function getCurrentPlatformColor() {
-  try {
-    // 현재 활성 탭 확인
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tabs.length === 0) return '#000'; // 기본값
-    
-    const currentTab = tabs[0];
-    const url = currentTab.url;
-    
-    // 플랫폼 감지
-    if (url.includes('naver.com') && url.includes('/map')) {
-      return '#03c75a'; // 네이버 초록
-    } else if (url.includes('kakao.com')) {
-      return '#FFE300'; // 카카오 노랑
-    }
-    
-    return '#000'; // 기본값 (검은색)
-  } catch (error) {
-    console.error('플랫폼 색상 감지 실패:', error);
-    return '#000'; // 기본값
-  }
-}
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local' && changes.mapScraperData) {
     loadStats();
   }
 });
+
+// ==================== 커스텀 테마 관리 ====================
+
+let currentEditingThemeId = null; // 현재 수정 중인 테마 ID
+
+// 커스텀 테마 관리 모달 표시
+function showCustomThemeManagementModal() {
+  loadCustomThemesList();
+  document.getElementById('custom-theme-management-modal').style.display = 'flex';
+}
+
+// 커스텀 테마 관리 모달 숨기기
+function hideCustomThemeManagementModal() {
+  document.getElementById('custom-theme-management-modal').style.display = 'none';
+}
+
+// 커스텀 테마 생성/수정 모달 표시
+function showCustomThemeModal(themeId = null) {
+  currentEditingThemeId = themeId;
+  resetCustomThemeModal();
+  
+  if (themeId) {
+    // 수정 모드
+    const customThemes = themeManager.getCustomThemes();
+    const theme = customThemes[themeId];
+    if (theme) {
+      document.getElementById('custom-theme-modal-title').textContent = '커스텀 테마 수정';
+      document.getElementById('custom-theme-name').value = theme.name;
+      document.getElementById('custom-main-color').value = theme.colors.main;
+      document.getElementById('custom-sub-color').value = theme.colors.sub;
+      document.getElementById('custom-accent-color').value = theme.colors.accent;
+      document.getElementById('custom-border-color').value = theme.colors.border;
+      
+      // 피커와 미리보기 업데이트
+      document.getElementById('custom-main-picker').value = theme.colors.main;
+      document.getElementById('custom-sub-picker').value = theme.colors.sub;
+      document.getElementById('custom-accent-picker').value = theme.colors.accent;
+      document.getElementById('custom-border-picker').value = theme.colors.border;
+      updateCustomThemePreview();
+      
+      // 삭제 버튼 표시
+      document.getElementById('delete-custom-theme').style.display = 'inline-block';
+    }
+  } else {
+    // 생성 모드
+    document.getElementById('custom-theme-modal-title').textContent = '커스텀 테마 만들기';
+    document.getElementById('delete-custom-theme').style.display = 'none';
+  }
+  
+  document.getElementById('custom-theme-modal').style.display = 'flex';
+}
+
+// 커스텀 테마 모달 숨기기
+function hideCustomThemeModal() {
+  document.getElementById('custom-theme-modal').style.display = 'none';
+}
+
+// 커스텀 테마 모달 초기화
+function resetCustomThemeModal() {
+  document.getElementById('custom-theme-name').value = '';
+  document.getElementById('custom-main-color').value = '#3E3F29';
+  document.getElementById('custom-sub-color').value = '#F8F7F3';
+  document.getElementById('custom-accent-color').value = '#BCA88D';
+  document.getElementById('custom-border-color').value = '#7D8D86';
+  
+  document.getElementById('custom-main-picker').value = '#3E3F29';
+  document.getElementById('custom-sub-picker').value = '#F8F7F3';
+  document.getElementById('custom-accent-picker').value = '#BCA88D';
+  document.getElementById('custom-border-picker').value = '#7D8D86';
+  
+  updateCustomThemePreview();
+}
+
+// 커스텀 테마 모달 이벤트 설정
+function setupCustomThemeModalEvents() {
+  // 관리 모달 키보드 이벤트
+  const managementModal = document.getElementById('custom-theme-management-modal');
+  const handleManagementKeyDown = (e) => {
+    if (managementModal.style.display === 'none') return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      hideCustomThemeManagementModal();
+    }
+  };
+
+  // 생성/수정 모달 키보드 이벤트
+  const creationModal = document.getElementById('custom-theme-modal');
+  const handleCreationKeyDown = (e) => {
+    if (creationModal.style.display === 'none') return;
+    
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        hideCustomThemeModal();
+        break;
+      case 'Enter':
+        if (e.ctrlKey) { // Ctrl+Enter로 저장
+          e.preventDefault();
+          saveCustomTheme();
+        }
+        break;
+    }
+  };
+
+  // 관리 모달 이벤트
+  document.getElementById('add-new-theme').addEventListener('click', () => {
+    hideCustomThemeManagementModal();
+    showCustomThemeModal();
+  });
+  
+  const originalShowCustomThemeManagementModal = window.showCustomThemeManagementModal;
+  window.showCustomThemeManagementModal = () => {
+    originalShowCustomThemeManagementModal();
+    document.addEventListener('keydown', handleManagementKeyDown);
+  };
+
+  const originalHideCustomThemeManagementModal = window.hideCustomThemeManagementModal;
+  window.hideCustomThemeManagementModal = () => {
+    document.removeEventListener('keydown', handleManagementKeyDown);
+    originalHideCustomThemeManagementModal();
+  };
+
+  document.getElementById('close-theme-management').addEventListener('click', hideCustomThemeManagementModal);
+  
+  // 생성/수정 모달 이벤트
+  document.getElementById('save-custom-theme').addEventListener('click', saveCustomTheme);
+  document.getElementById('delete-custom-theme').addEventListener('click', deleteCurrentCustomTheme);
+  document.getElementById('cancel-custom-theme').addEventListener('click', hideCustomThemeModal);
+
+  const originalShowCustomThemeModal = window.showCustomThemeModal;
+  window.showCustomThemeModal = (themeId = null) => {
+    originalShowCustomThemeModal(themeId);
+    document.addEventListener('keydown', handleCreationKeyDown);
+    // 테마 이름 입력 필드로 자동 포커스
+    setTimeout(() => {
+      document.getElementById('custom-theme-name').focus();
+    }, 100);
+  };
+
+  const originalHideCustomThemeModal = window.hideCustomThemeModal;
+  window.hideCustomThemeModal = () => {
+    document.removeEventListener('keydown', handleCreationKeyDown);
+    originalHideCustomThemeModal();
+  };
+  
+  // 색상 입력 필드와 피커 연동
+  setupColorInputSync('custom-main-color', 'custom-main-picker', 'custom-main-preview');
+  setupColorInputSync('custom-sub-color', 'custom-sub-picker', 'custom-sub-preview');
+  setupColorInputSync('custom-accent-color', 'custom-accent-picker', 'custom-accent-preview');
+  setupColorInputSync('custom-border-color', 'custom-border-picker', 'custom-border-preview');
+}
+
+// 색상 입력과 피커 동기화 설정
+function setupColorInputSync(inputId, pickerId, previewId) {
+  const input = document.getElementById(inputId);
+  const picker = document.getElementById(pickerId);
+  const preview = document.getElementById(previewId);
+  
+  // 텍스트 입력 -> 피커 & 미리보기 업데이트
+  input.addEventListener('input', (e) => {
+    const color = e.target.value;
+    if (isValidHexColor(color)) {
+      picker.value = color;
+      preview.style.backgroundColor = color;
+      input.style.borderColor = '';
+    } else {
+      input.style.borderColor = 'red';
+    }
+  });
+  
+  // 피커 -> 텍스트 입력 & 미리보기 업데이트
+  picker.addEventListener('input', (e) => {
+    const color = e.target.value;
+    input.value = color;
+    preview.style.backgroundColor = color;
+    input.style.borderColor = '';
+  });
+}
+
+// 커스텀 테마 미리보기 업데이트
+function updateCustomThemePreview() {
+  document.getElementById('custom-main-preview').style.backgroundColor = document.getElementById('custom-main-color').value;
+  document.getElementById('custom-sub-preview').style.backgroundColor = document.getElementById('custom-sub-color').value;
+  document.getElementById('custom-accent-preview').style.backgroundColor = document.getElementById('custom-accent-color').value;
+  document.getElementById('custom-border-preview').style.backgroundColor = document.getElementById('custom-border-color').value;
+}
+
+// 커스텀 테마 목록 로드
+function loadCustomThemesList() {
+  const customThemes = themeManager.getCustomThemes();
+  const container = document.getElementById('custom-themes-list');
+  
+  if (Object.keys(customThemes).length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: var(--accent-color); padding: 20px;">생성된 커스텀 테마가 없습니다.</p>';
+    return;
+  }
+  
+  container.innerHTML = Object.entries(customThemes).map(([themeId, theme]) => `
+    <div class="custom-theme-item" data-theme-id="${themeId}" style="
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 12px; 
+      margin-bottom: 8px; 
+      border: 1px solid var(--background-color); 
+      border-radius: 6px;
+      background: var(--secondary-color);
+    ">
+      <div style="flex: 1;">
+        <div style="font-weight: bold; margin-bottom: 4px;">${theme.name}</div>
+        <div style="display: flex; gap: 4px;">
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.main}; border: 1px solid #ccc;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.sub}; border: 1px solid #ccc;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.accent}; border: 1px solid #ccc;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 3px; background: ${theme.colors.border}; border: 1px solid #ccc;"></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="action-btn edit-theme-btn" style="padding: 6px 12px; font-size: 11px;">수정</button>
+        <button class="action-btn delete-theme-btn" style="padding: 6px 12px; font-size: 11px; background: #dc3545; color: white;">삭제</button>
+      </div>
+    </div>
+  `).join('');
+  
+  // 이벤트 리스너 추가
+  setupCustomThemeListeners();
+}
+
+// 커스텀 테마 목록 이벤트 리스너 설정
+function setupCustomThemeListeners() {
+  const container = document.getElementById('custom-themes-list');
+  
+  // 이벤트 위임을 사용하여 수정/삭제 버튼 처리
+  container.addEventListener('click', (e) => {
+    const themeItem = e.target.closest('.custom-theme-item');
+    if (!themeItem) return;
+    
+    const themeId = themeItem.getAttribute('data-theme-id');
+    
+    if (e.target.classList.contains('edit-theme-btn')) {
+      editCustomTheme(themeId);
+    } else if (e.target.classList.contains('delete-theme-btn')) {
+      deleteCustomThemeFromList(themeId);
+    }
+  });
+}
+
+// 커스텀 테마 수정
+function editCustomTheme(themeId) {
+  hideCustomThemeManagementModal();
+  showCustomThemeModal(themeId);
+}
+
+// 목록에서 커스텀 테마 삭제
+async function deleteCustomThemeFromList(themeId) {
+  const customThemes = themeManager.getCustomThemes();
+  const theme = customThemes[themeId];
+  
+  if (!theme) return;
+  
+  if (!confirm(`'${theme.name}' 테마를 삭제하시겠습니까?`)) return;
+  
+  try {
+    themeManager.deleteCustomTheme(themeId);
+    
+    // 현재 사용 중인 테마라면 기본 테마로 변경
+    const currentTheme = themeManager.getCurrentTheme();
+    if (currentTheme === themeId) {
+      const themeSelect = document.getElementById('theme-select');
+      themeSelect.value = 'theme1';
+      themeManager.setTheme('theme1');
+      updateThemePreview('theme1');
+      
+      chrome.runtime.sendMessage({
+        action: 'updateTheme',
+        theme: 'theme1'
+      });
+    }
+    
+    // 테마 선택기 업데이트
+    updateThemeSelector();
+    
+    // 목록 새로고침
+    loadCustomThemesList();
+    
+    await showMessage(`커스텀 테마 '${theme.name}'이 삭제되었습니다.`);
+    
+  } catch (error) {
+    console.error('커스텀 테마 삭제 실패:', error);
+    alert(error.message || '테마 삭제에 실패했습니다.');
+  }
+}
+
+// 커스텀 테마 저장
+async function saveCustomTheme() {
+  const name = document.getElementById('custom-theme-name').value.trim();
+  const colors = {
+    main: document.getElementById('custom-main-color').value,
+    sub: document.getElementById('custom-sub-color').value,
+    accent: document.getElementById('custom-accent-color').value,
+    border: document.getElementById('custom-border-color').value
+  };
+  
+  // 유효성 검사
+  if (!name) {
+    alert('테마 이름을 입력해주세요.');
+    return;
+  }
+  
+  if (!Object.values(colors).every(color => isValidHexColor(color))) {
+    alert('모든 색상을 올바른 형식(#RRGGBB)으로 입력해주세요.');
+    return;
+  }
+  
+  try {
+    let themeId;
+    let message;
+    
+    if (currentEditingThemeId) {
+      // 수정 모드
+      themeManager.updateCustomTheme(currentEditingThemeId, name, colors);
+      themeId = currentEditingThemeId;
+      message = `커스텀 테마 '${name}'이 수정되었습니다!`;
+    } else {
+      // 생성 모드
+      themeId = themeManager.saveCustomTheme(name, colors);
+      message = `커스텀 테마 '${name}'이 생성되었습니다!`;
+    }
+    
+    // 테마 선택기 업데이트
+    updateThemeSelector();
+    
+    // 테마 적용
+    const themeSelect = document.getElementById('theme-select');
+    themeSelect.value = themeId;
+    themeManager.setTheme(themeId);
+    updateThemePreview(themeId);
+    
+    // 사이드패널도 업데이트
+    chrome.runtime.sendMessage({
+      action: 'updateTheme',
+      theme: themeId
+    });
+    
+    hideCustomThemeModal();
+    await showMessage(message);
+    
+  } catch (error) {
+    console.error('커스텀 테마 저장 실패:', error);
+    alert(error.message || '테마 저장에 실패했습니다.');
+  }
+}
+
+// 현재 수정 중인 커스텀 테마 삭제
+async function deleteCurrentCustomTheme() {
+  if (!currentEditingThemeId) return;
+  
+  const customThemes = themeManager.getCustomThemes();
+  const theme = customThemes[currentEditingThemeId];
+  
+  if (!theme) return;
+  
+  if (!confirm(`'${theme.name}' 테마를 삭제하시겠습니까?`)) return;
+  
+  try {
+    themeManager.deleteCustomTheme(currentEditingThemeId);
+    
+    // 현재 사용 중인 테마라면 기본 테마로 변경
+    const currentTheme = themeManager.getCurrentTheme();
+    if (currentTheme === currentEditingThemeId) {
+      const themeSelect = document.getElementById('theme-select');
+      themeSelect.value = 'theme1';
+      themeManager.setTheme('theme1');
+      updateThemePreview('theme1');
+      
+      chrome.runtime.sendMessage({
+        action: 'updateTheme',
+        theme: 'theme1'
+      });
+    }
+    
+    // 테마 선택기 업데이트
+    updateThemeSelector();
+    
+    hideCustomThemeModal();
+    await showMessage(`커스텀 테마 '${theme.name}'이 삭제되었습니다.`);
+    
+  } catch (error) {
+    console.error('커스텀 테마 삭제 실패:', error);
+    alert(error.message || '테마 삭제에 실패했습니다.');
+  }
+}
+
+// HEX 색상 코드 유효성 검사
+function isValidHexColor(color) {
+  return /^#[0-9A-F]{6}$/i.test(color);
+}
+
+// ==================== 즐겨찾기 관리 ====================
+
+// 즐겨찾기 장소 로드 및 표시
+async function loadFavoritePlaces() {
+  try {
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const data = result.mapScraperData || {};
+    
+    // 모든 장소를 수집하고 즐겨찾기 표시가 된 것들만 필터링
+    const favoritePlaces = [];
+    Object.values(data).forEach(list => {
+      if (list.places && list.places.length > 0) {
+        list.places.forEach(place => {
+          if (place.isFavorite) {
+            favoritePlaces.push({
+              ...place,
+              listName: list.name
+            });
+          }
+        });
+      }
+    });
+    
+    displayFavoritePlaces(favoritePlaces);
+    
+  } catch (error) {
+    console.error('즐겨찾기 로드 실패:', error);
+  }
+}
+
+// 즐겨찾기 장소 화면에 표시
+function displayFavoritePlaces(favoritePlaces) {
+  const container = document.getElementById('favorite-places');
+  if (!container) return;
+  
+  if (favoritePlaces.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: var(--accent-color); margin-top: 20px; font-size: 11px;">아직 즐겨찾기한 장소가 없습니다</p>';
+    return;
+  }
+  
+  // 최대 5개까지만 표시
+  const displayPlaces = favoritePlaces.slice(0, 5);
+  
+  container.innerHTML = displayPlaces.map(place => `
+    <div class="favorite-item" onclick="openPlaceInMap('${place.url || ''}', '${place.platform || 'naver'}')">
+      <div class="favorite-name">${place.name || '알 수 없는 장소'}</div>
+      <div class="favorite-address">${place.listName || ''}</div>
+    </div>
+  `).join('');
+}
+
+// 지도에서 장소 열기
+function openPlaceInMap(url, platform) {
+  if (!url) {
+    // URL이 없으면 해당 플랫폼의 기본 지도 페이지로 이동
+    if (platform === 'kakao') {
+      chrome.tabs.create({ url: 'https://map.kakao.com' });
+    } else {
+      chrome.tabs.create({ url: 'https://map.naver.com' });
+    }
+    return;
+  }
+  
+  chrome.tabs.create({ url });
+}
+
+// 즐겨찾기 토글 함수 (sidepanel에서 사용할 수 있도록 전역으로 노출)
+window.toggleFavorite = async function(listId, placeId) {
+  try {
+    const result = await chrome.storage.local.get(['mapScraperData']);
+    const data = result.mapScraperData || {};
+    
+    if (data[listId] && data[listId].places) {
+      const place = data[listId].places.find(p => p.id === placeId);
+      if (place) {
+        place.isFavorite = !place.isFavorite;
+        await chrome.storage.local.set({ mapScraperData: data });
+        
+        // 즐겨찾기 목록 새로고침
+        loadFavoritePlaces();
+        
+        return place.isFavorite;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('즐겨찾기 토글 실패:', error);
+    return false;
+  }
+};

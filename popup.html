@@ -3,235 +3,618 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CustomPlaceDB</title>
+    <title>CustomPlaceDB - 설정</title>
+    <link rel="stylesheet" href="themes.css">
     <style>
+        
         body {
-            width: 300px;
-            padding: 20px;
+            width: 600px;
+            min-height: 400px;
+            padding: 0;
+            margin: 0 auto;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            color: #000;
+            background: #ffffff;
+            color: var(--text-color);
         }
         
         .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px;
             text-align: center;
-            margin-bottom: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100vw;
+            z-index: 10;
+            box-sizing: border-box;
         }
         
         .header h1 {
-            font-size: 18px;
-            color: #000;
-            margin: 0;
+            font-size: 20px;
+            margin: 0 0 8px 0;
+            font-weight: 600;
         }
         
         .header p {
-            font-size: 12px;
-            color: #000;
-            margin: 5px 0 0 0;
-        }
-        
-        .info-section {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .info-section h3 {
             font-size: 14px;
-            margin: 0 0 8px 0;
-            color: #000;
+            margin: 0;
+            opacity: 0.9;
         }
         
-        .info-section p {
-            font-size: 12px;
-            color: #000;
-            margin: 0;
-            line-height: 1.4;
+        .content {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 16px;
+            height: 400px;
+            margin: 100px auto 0 auto;
+            max-width: 560px;
+        }
+        
+        .grid-item {
+            background: var(--secondary-color);
+            border: 1px solid var(--background-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .grid-item h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            color: var(--primary-color);
         }
         
         .stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
         }
         
-        .stat-item {
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
             text-align: center;
-            flex: 1;
+            border: 1px solid var(--background-color);
         }
         
         .stat-number {
             font-size: 20px;
-            font-weight: bold;
-            color: #000;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 2px;
         }
         
         .stat-label {
-            font-size: 11px;
-            color: #000;
+            font-size: 10px;
+            color: var(--accent-color);
+            font-weight: 500;
         }
         
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .section {
+            margin-bottom: 24px;
         }
         
-        .export-import-section {
-            display: flex;
-            gap: 5px;
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            color: var(--primary-color);
         }
         
-        .export-import-section .action-btn {
-            flex: 1;
-            font-size: 12px;
-            padding: 10px 8px;
+        .quick-actions {
+            display: grid;
+            gap: 8px;
         }
         
         .action-btn {
-            padding: 12px;
-            border: none;
+            padding: 10px 12px;
+            border: 1px solid var(--background-color);
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
-            font-weight: bold;
             text-decoration: none;
             text-align: center;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
+            background: white;
+            color: var(--primary-color);
         }
         
-        .primary-btn {
-            background-color: #03c75a;
+        .action-btn:hover {
+            background: var(--secondary-color);
+            border-color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+        
+        .action-btn.primary {
+            background: var(--primary-color);
             color: white;
+            border-color: var(--primary-color);
         }
         
-        .primary-btn:hover {
-            background-color: #02b351;
+        .action-btn.primary:hover {
+            background: var(--accent-color);
+            transform: translateY(-1px);
+        }
+        
+        .map-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
         }
         
         .naver-btn {
-            background-color: #03c75a;
+            background: #03c75a;
+            color: white;
+            border-color: #03c75a;
         }
         
         .naver-btn:hover {
-            background-color: #02b351;
+            background: #02b351;
+            border-color: #02b351;
         }
         
         .kakao-btn {
-            background-color: #FFE300;
+            background: #FFE300;
             color: #333;
+            border-color: #FFE300;
         }
         
         .kakao-btn:hover {
-            background-color: #FFDA00;
+            background: #FFDA00;
+            border-color: #FFDA00;
         }
         
-        
-        .secondary-btn {
-            background-color: #f0f0f0;
-            color: #000;
+        .data-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         
-        .secondary-btn:hover {
-            background-color: #e0e0e0;
+        .grid-item p {
+            font-size: 12px;
+            color: var(--accent-color);
+            margin: 0 0 8px 0;
+            line-height: 1.4;
+        }
+        
+        .feature-list {
+            margin-top: 12px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+            color: var(--accent-color);
+            margin: 3px 0;
+        }
+        
+        .feature-item:before {
+            content: "✓";
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-right: 6px;
         }
         
         .version {
             text-align: center;
-            font-size: 10px;
-            color: #000;
-            margin-top: 15px;
+            padding: 16px;
+            border-top: 1px solid #F5C9B0;
+            font-size: 11px;
+            color: #A6B28B;
+            margin-top: auto;
+        }
+        
+        /* 모달 스타일 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: #F9F6F3;
+            padding: 20px;
+            border-radius: 12px;
+            width: 280px;
+            box-shadow: 0 8px 30px rgba(28, 53, 45, 0.3);
+            border: 2px solid #F5C9B0;
+        }
+        
+        .modal h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: #1C352D;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        /* 테마 선택기 스타일 */
+        .theme-selector-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .theme-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .custom-theme-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .custom-theme-btn:hover {
+            background: var(--accent-color);
+        }
+        
+        .theme-selector-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .theme-selector {
+            padding: 8px 10px;
+            border: 1px solid var(--background-color);
+            border-radius: 6px;
+            font-size: 12px;
+            background-color: white;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .theme-selector:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+        }
+        
+        .theme-preview {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+        }
+        
+        .theme-color-box {
+            flex: 1;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-color-box:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 커스텀 테마 모달 스타일 */
+        .color-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .color-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .color-input-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .color-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .color-input-wrapper input[type="text"] {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid var(--background-color);
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+        
+        .color-input-wrapper input[type="color"] {
+            width: 30px;
+            height: 26px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .custom-theme-preview {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--background-color);
+        }
+        
+        .custom-preview-box {
+            flex: 1;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        /* 즐겨찾기 스타일 */
+        .favorite-places {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .favorite-item {
+            background: white;
+            border: 1px solid var(--background-color);
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .favorite-item:hover {
+            background: var(--secondary-color);
+            border-color: var(--accent-color);
+        }
+        
+        .favorite-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 2px;
+        }
+        
+        .favorite-address {
+            font-size: 9px;
+            color: var(--accent-color);
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>CustomPlaceDB</h1>
-        <p>네이버지도, 카카오맵에서 장소를 간편하게 저장하고 관리하세요</p>
+        <h1>CustomPlaceDB v2.0</h1>
+        <p>Chrome Side Panel로 더욱 편리해진 장소 관리</p>
     </div>
     
-    <div class="stats">
-        <div class="stat-item">
-            <div class="stat-number" id="list-count">0</div>
-            <div class="stat-label">목록 개수</div>
+    <div class="content">
+        <!-- 첫 번째 줄 -->
+        <!-- 1. 대시보드 & 빠른 실행 -->
+        <div class="grid-item">
+            <div class="stats" style="margin-bottom: 8px;">
+                <div class="stat-card" style="padding: 8px;">
+                    <div class="stat-number" id="list-count" style="font-size: 16px;">0</div>
+                    <div class="stat-label" style="font-size: 9px;">저장된 목록</div>
+                </div>
+                <div class="stat-card" style="padding: 8px;">
+                    <div class="stat-number" id="place-count" style="font-size: 16px;">0</div>
+                    <div class="stat-label" style="font-size: 9px;">총 장소 수</div>
+                </div>
+            </div>
+            <div class="map-links">
+                <button class="action-btn naver-btn" id="open-naver-map">네이버지도</button>
+                <button class="action-btn kakao-btn" id="open-kakao-map">카카오맵</button>
+            </div>
         </div>
-        <div class="stat-item">
-            <div class="stat-number" id="place-count">0</div>
-            <div class="stat-label">저장된 장소</div>
+
+        <!-- 2. 사용 방법 -->
+        <div class="grid-item">
+            <h3>사용 방법</h3>
+            <p><strong>1.</strong> 위 버튼으로 지도 사이트 접속<br>
+               <strong>2.</strong> 툴바 아이콘 클릭으로 Side Panel 열기<br>
+               <strong>3.</strong> 장소 클릭 후 '현재 장소 추가' 버튼 클릭<br>
+               <strong>4.</strong> 커스텀 필드로 나만의 분류 체계 구축</p>
+            <div class="feature-list">
+                <div class="feature-item">키보드 단축키: Ctrl+Shift+P</div>
+                <div class="feature-item">우클릭 메뉴로 빠른 저장</div>
+            </div>
         </div>
-    </div>
-    
-    <div class="action-buttons">
-        <button class="action-btn primary-btn naver-btn" id="open-naver-map">네이버지도</button>
-        <button class="action-btn primary-btn kakao-btn" id="open-kakao-map">카카오맵</button>
-        <div class="export-import-section">
-            <button class="action-btn secondary-btn" id="export-data">데이터 내보내기</button>
-            <button class="action-btn secondary-btn" id="import-data">데이터 가져오기</button>
+
+        <!-- 3. 테마 설정 -->
+        <div class="grid-item">
+            <h3>테마 설정</h3>
+            <div class="theme-selector-container">
+                <select id="theme-select" class="theme-selector" style="width: 100%; margin-bottom: 8px;">
+                    <option value="theme1" selected>올리브 그린</option>
+                    <option value="theme2">포레스트 그린</option>
+                    <option value="theme3">스프링 라임</option>
+                    <option value="theme4">바이올렛 퍼플</option>
+                    <option value="theme5">라벤더 블루</option>
+                </select>
+                <div class="theme-preview" id="theme-preview" style="margin-bottom: 8px;">
+                    <div class="theme-color-box" id="main-bg-preview"></div>
+                    <div class="theme-color-box" id="sub-bg-preview"></div>
+                    <div class="theme-color-box" id="accent-preview"></div>
+                    <div class="theme-color-box" id="border-preview"></div>
+                </div>
+                <button class="action-btn" id="manage-custom-theme" style="width: 100%; font-size: 11px;">커스텀 테마</button>
+            </div>
         </div>
-        <button class="action-btn secondary-btn" id="clear-data">모든 데이터 삭제</button>
-    </div>
-    
-    <div class="info-section">
-        <h3>사용 방법</h3>
-        <p><strong>1. 지도 서비스 접속</strong><br>
-        아래 버튼으로 네이버지도, 카카오맵 중 하나를 선택하세요<br><br>
-        
-        <strong>2. 장소 선택</strong><br>
-        지도에서 저장하고 싶은 장소를 클릭하여 상세 정보를 확인하세요<br><br>
-        
-        <strong>3. 목록 관리</strong><br>
-        우측 사이드바에서 '새 목록 생성' 버튼으로 목록을 만들거나 기존 목록을 선택하세요<br><br>
-        
-        <strong>4. 장소 저장</strong><br>
-        사이드바의 '현재 보고 있는 장소 추가' 버튼을 클릭하면 장소명, 카테고리, 별점이 자동으로 저장됩니다<br><br>
-        
-        <strong>5. 💎 커스텀 필드 관리 (핵심 기능)</strong><br>
-        <em>이 앱의 가장 강력한 기능입니다!</em> '커스텀 필드 관리'에서 나만의 분류 체계를 만들어보세요:<br>
-        • 텍스트형 필드: 가격대, 주차정보, 특이사항 등 자유로운 정보 입력<br>
-        • 선택형 필드: 방문여부(가봤음/안가봤음), 평점(1-5점), 우선순위(높음/보통/낮음) 등<br>
-        • 맞춤형 데이터베이스: 맛집 탐방, 여행 계획, 부동산 검색 등 용도에 맞게 완전히 커스터마이즈 가능<br><br>
-        
-        <strong>6. 추가 정보 입력</strong><br>
-        저장된 장소에 상세한 메모를 추가하고, 설정한 커스텀 필드에 값을 입력하세요<br><br>
-        
-        <strong>7. 데이터 백업</strong><br>
-        '데이터 내보내기'로 CSV나 JSON 형식으로 백업하고, 다른 기기에서 '데이터 가져오기'로 복원할 수 있습니다</p>
-    </div>
-    
-    <!-- 내보내기 형식 선택 모달 -->
-    <div id="export-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 260px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 16px;">내보내기 형식 선택</h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="action-btn primary-btn" id="export-json">JSON 파일로 내보내기</button>
-                <button class="action-btn secondary-btn" id="export-csv">CSV 파일로 내보내기</button>
-                <button class="action-btn secondary-btn" id="cancel-export" style="margin-top: 10px;">취소</button>
+
+        <!-- 두 번째 줄 -->
+        <!-- 4. 데이터 관리 -->
+        <div class="grid-item">
+            <h3>데이터 관리</h3>
+            <div class="data-actions">
+                <button class="action-btn" id="export-data">내보내기</button>
+                <button class="action-btn" id="import-data">가져오기 <small>JSON</small></button>
+                <button class="action-btn" id="clear-data">모든 데이터 삭제</button>
+            </div>
+        </div>
+
+        <!-- 5. v2.0 정보 -->
+        <div class="grid-item">
+            <h3>v2.0 새로운 기능</h3>
+            <div class="feature-list">
+                <div class="feature-item">브라우저 네이티브 사이드 패널</div>
+                <div class="feature-item">시스템 알림 지원</div>
+                <div class="feature-item">향상된 성능과 안정성</div>
+                <div class="feature-item">테마 기능 추가</div>
+            </div>
+        </div>
+
+        <!-- 6. 정보 -->
+        <div class="grid-item" style="background: transparent; border: none;">
+            <div style="text-align: center; padding: 16px; font-size: 11px; color: #A6B28B;">
+                CustomPlaceDB v2.0 - Side Panel Edition<br>
+                제작자: nap4595@gmail.com<br>
+                <a href="#" id="privacy-policy-link" style="color: #999; text-decoration: none;">개인정보 처리방침</a>
             </div>
         </div>
     </div>
 
-    <!-- 데이터 가져오기 선택 모달 -->
-    <div id="import-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 280px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #000;">데이터 가져오기</h3>
-            <p style="margin: 0 0 20px 0; font-size: 14px; color: #000; line-height: 1.4;">기존 데이터를 어떻게 처리하시겠습니까?</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="action-btn primary-btn" id="import-merge">기존 데이터 유지 (병합)</button>
-                <button class="action-btn secondary-btn" id="import-replace">기존 데이터 제거 (교체)</button>
-                <button class="action-btn secondary-btn" id="import-cancel" style="margin-top: 10px;">취소</button>
+    <!-- 내보내기 모달 -->
+    <div id="export-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>내보내기 형식 선택</h3>
+            <div class="modal-buttons">
+                <button class="action-btn primary" id="export-json">JSON 파일로 내보내기</button>
+                <button class="action-btn" id="export-csv">CSV 파일로 내보내기</button>
+                <button class="action-btn" id="cancel-export">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 가져오기 모달 -->
+    <div id="import-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>데이터 가져오기</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 16px;">기존 데이터를 어떻게 처리하시겠습니까?</p>
+            <div class="modal-buttons">
+                <button class="action-btn primary" id="import-merge">기존 데이터 유지 (병합)</button>
+                <button class="action-btn" id="import-replace">기존 데이터 제거 (교체)</button>
+                <button class="action-btn" id="import-cancel">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 커스텀 테마 관리 모달 -->
+    <div id="custom-theme-management-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 400px;">
+            <h3>커스텀 테마 관리</h3>
+            
+            <div class="modal-buttons" style="margin-bottom: 20px;">
+                <button class="action-btn primary" id="add-new-theme">새 테마 추가</button>
+            </div>
+            
+            <div id="custom-themes-list" style="max-height: 300px; overflow-y: auto;">
+                <!-- 커스텀 테마 목록이 여기에 표시됩니다 -->
+            </div>
+            
+            <div class="modal-buttons" style="margin-top: 16px;">
+                <button class="action-btn" id="close-theme-management">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 커스텀 테마 생성/수정 모달 -->
+    <div id="custom-theme-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="width: 600px;">
+            <h3 id="custom-theme-modal-title">커스텀 테마 만들기</h3>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--primary-color);">테마 이름:</label>
+                <input type="text" id="custom-theme-name" placeholder="나만의 테마" style="width: 100%; padding: 8px; border: 1px solid var(--background-color); border-radius: 4px; font-size: 12px;">
+            </div>
+            
+            <div class="color-inputs">
+                <div class="color-input-group">
+                    <label>Main Color (주요 배경):</label>
+                    <div class="color-input-wrapper">
+                        <input type="text" id="custom-main-color" placeholder="#3E3F29" maxlength="7">
+                        <input type="color" id="custom-main-picker" value="#3E3F29">
+                    </div>
+                </div>
+                
+                <div class="color-input-group">
+                    <label>Sub Color (보조 배경):</label>
+                    <div class="color-input-wrapper">
+                        <input type="text" id="custom-sub-color" placeholder="#F8F7F3" maxlength="7">
+                        <input type="color" id="custom-sub-picker" value="#F8F7F3">
+                    </div>
+                </div>
+                
+                <div class="color-input-group">
+                    <label>Accent Color (강조색):</label>
+                    <div class="color-input-wrapper">
+                        <input type="text" id="custom-accent-color" placeholder="#BCA88D" maxlength="7">
+                        <input type="color" id="custom-accent-picker" value="#BCA88D">
+                    </div>
+                </div>
+                
+                <div class="color-input-group">
+                    <label>Border Color (테두리):</label>
+                    <div class="color-input-wrapper">
+                        <input type="text" id="custom-border-color" placeholder="#7D8D86" maxlength="7">
+                        <input type="color" id="custom-border-picker" value="#7D8D86">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="custom-theme-preview">
+                <div class="custom-preview-box" id="custom-main-preview"></div>
+                <div class="custom-preview-box" id="custom-sub-preview"></div>
+                <div class="custom-preview-box" id="custom-accent-preview"></div>
+                <div class="custom-preview-box" id="custom-border-preview"></div>
+            </div>
+            
+            <div class="modal-buttons" style="margin-top: 16px;">
+                <button class="action-btn primary" id="save-custom-theme">저장</button>
+                <button class="action-btn" id="delete-custom-theme" style="background-color: #dc3545; color: white; display: none;">삭제</button>
+                <button class="action-btn" id="cancel-custom-theme">취소</button>
             </div>
         </div>
     </div>
     
-    <!-- 파일 입력 (숨김) -->
     <input type="file" id="file-input" accept=".json" style="display: none;">
     
-    <div class="version">
-        제작자: nap4595@gmail.com<br>
-        <a href="#" id="privacy-policy-link" style="color: #666; text-decoration: none; font-size: 10px;">개인정보 처리방침</a>
-    </div>
-    
+    <script src="theme-config.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

@@ -3,11 +3,18 @@
 네이버지도, 카카오맵에서 장소를 저장하고 개인 맞춤 데이터베이스를 구축하세요
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
-![Version](https://img.shields.io/badge/Version-1.3-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/Version-2.0-brightgreen?style=flat-square)
+![Side Panel API](https://img.shields.io/badge/Side%20Panel-API-blue?style=flat-square&logo=googlechrome&logoColor=white)
 ![Privacy](https://img.shields.io/badge/Privacy-Local%20Storage-green?style=flat-square&logo=shield&logoColor=white)
 ![Web Store Published](https://img.shields.io/badge/Web%20Store-Published-brightgreen?style=flat-square&logo=googlechrome&logoColor=white)
 
 ## 🌟 주요 기능
+
+### 🆕 Chrome Side Panel API (v2.0)
+- **네이티브 사이드 패널**: Chrome 공식 Side Panel API 사용으로 안정성과 성능 향상
+- **우클릭 메뉴**: 컨텍스트 메뉴로 빠른 장소 저장
+- **시스템 알림**: Chrome 알림 API로 작업 완료 알림
+- **원클릭 접근**: 툴바 아이콘 클릭으로 즉시 패널 열기/닫기
 
 ### 💎 커스텀 필드 시스템 (핵심 기능)
 - **텍스트형 필드**: 가격대, 특이사항 등 자유로운 정보 입력
@@ -62,26 +69,26 @@
 ## 📖 사용 방법
 
 ### 1️⃣ 지도 서비스 접속
-확장프로그램 팝업에서 네이버지도, 카카오맵 중 선택
+툴바의 CustomPlaceDB 아이콘을 클릭하여 설정 창에서 네이버지도, 카카오맵 중 선택
 
-### 2️⃣ 장소 선택
-지도에서 저장하고 싶은 장소를 클릭하여 상세 정보 확인
+### 2️⃣ Side Panel 열기
+- **툴바 아이콘 클릭**: CustomPlaceDB 아이콘을 한 번 클릭하면 Side Panel이 열림
+- **우클릭 메뉴**: 지도 페이지에서 우클릭 → '현재 장소 저장하기'
 
-### 3️⃣ 목록 관리
-우측 사이드바에서 '새 목록 생성' 또는 기존 목록 선택
-
-### 4️⃣ 장소 저장
-사이드바의 '현재 보고 있는 장소 추가' 버튼 클릭
+### 3️⃣ 장소 선택 및 저장
+- **Side Panel 버튼**: 지도에서 장소를 선택한 후 Side Panel에서 '현재 보고 있는 장소 추가' 클릭
 → 장소명, 카테고리, 별점이 자동으로 저장됩니다
+
+### 4️⃣ 목록 관리
+Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적으로 장소 분류
 
 ### 5️⃣ 💎 커스텀 필드 활용 (핵심!)
 - **커스텀 필드 관리**에서 나만의 분류 체계 생성
 - 텍스트형/선택형 필드로 상세 정보 입력
 - 맛집, 여행지, 부동산 등 용도별 맞춤 설정
 
-### 6️⃣ 데이터 백업
-'데이터 내보내기'로 JSON 백업 및 다른 기기에서 복원
-CSV 파일로 내보내기 기능으로 편리한 사용 가능
+### 6️⃣ 데이터 백업 및 설정
+툴바 아이콘을 클릭하여 설정 창에서 '데이터 내보내기'로 JSON/CSV 백업 및 다른 기기에서 복원
 
 ## 🎯 활용 사례
 
@@ -115,25 +122,36 @@ CSV 파일로 내보내기 기능으로 편리한 사용 가능
 
 ## 🛠️ 기술 스택
 
+### Core Technologies
 - **Manifest V3** - 최신 Chrome Extension API
+- **Chrome Side Panel API** - 네이티브 사이드 패널 구현 (Chrome 114+)
 - **Vanilla JavaScript** - 순수 자바스크립트로 경량화
+- **함수형 프로그래밍** - 순수 함수, 불변성, 고차 함수 활용
+
+### Chrome APIs
 - **Chrome Storage API** - 로컬 데이터 저장
+- **Chrome Notifications API** - 시스템 알림
+- **Chrome Context Menus API** - 우클릭 메뉴
+- **Chrome Tabs API** - 탭 관리
+
+### Frontend
 - **DOM Manipulation** - 실시간 데이터 추출
 - **CSS3** - 반응형 UI 디자인
-- **CONFIG Pattern** - 설정 중앙화 및 유지보수 효율성 향상
-- **Production Logging System** - 성능 최적화된 조건부 로깅
-- **CSS Variables System** - 테마 관리 및 스타일 중앙화
-- **Defensive Programming** - 안전한 에러 처리 및 기본값 설정
+<<<<<<< HEAD
+- **Event Delegation** - 효율적인 이벤트 처리
 
 ## 📊 프로젝트 통계
 
-- **총 코드 라인**: 3,900+ 라인
-- **지원 플랫폼**: 2개 (네이버, 카카오)
-- **개발 기간**: 7일 (7/10 ~ 7/14 + 7/29 ~ 7/30)
+- **총 코드 라인**: 4,500+ 라인 (v2.0 업데이트 포함)
+- **지원 플랫폼**: 2개 (네이버지도, 카카오맵)
+- **Chrome API 활용**: 5개 (sidePanel, storage, notifications, contextMenus, activeTab)
+- **개발 기간**: 8일 (7/10 ~ 7/14 + 7/30 + 8/7)
 - **핵심 작업**
-  - 단순 스크랩 → 커스텀 데이터베이스
-  - 네이버 지도만 가능 → 네이버, 카카오 가능 및 확장 용이한 코드 구축
+  - 단순 스크랩 → 커스텀 데이터베이스 시스템
+  - Content Script 사이드바 → Chrome 공식 Side Panel API
+  - 네이버 지도만 지원 → 다중 플랫폼 지원 시스템
   - 드래그 앤 드롭 기반 고급 UX 구현
+  - 함수형 프로그래밍 패턴 도입
   - 모달 시스템 및 필드 관리 고도화
 
 ## 📧 연락처
@@ -141,6 +159,28 @@ CSV 파일로 내보내기 기능으로 편리한 사용 가능
 **개발자**: nap4595@gmail.com
 
 ## 🔄 업데이트 로그
+
+### v2.0 (2025-08-09) 🎉 **Major Update - Side Panel API & Refactoring**
+- 🌟 **Chrome Side Panel API 도입**: Content Script 기반 사이드바를 Chrome 공식 Side Panel API로 완전 전환
+  - 네이티브 브라우저 Side Panel로 안정성과 성능 대폭 향상
+  - 툴바 아이콘 클릭으로 패널 열기/닫기 원터치 지원
+  - 브라우저 창 크기에 관계없이 일정한 패널 영역 확보
+- 🖱️ **우클릭 컨텍스트 메뉴**: 지도 페이지에서 우클릭으로 빠른 장소 저장
+- 🗑️ **단축키 기능 제거**: 사용성이 낮고 다른 기능과 충돌 가능성이 있는 키보드 단축키 관련 코드를 모두 제거하여 기능을 단순화했습니다.
+- 🔔 **시스템 알림**: Chrome Notifications API로 작업 완료 피드백
+- 🎨 **커스텀 테마 시스템**: 5가지 기본 테마 + 사용자 정의 테마 생성 기능
+  - 3x2 그리드 레이아웃으로 직관적인 테마 선택
+  - 실시간 미리보기 및 색상 피커 지원
+  - 테마별 완전한 색상 커스터마이징
+- 🎨 **UI/UX 개선**: Side Panel에 최적화된 깔끔한 인터페이스
+- 🧹 **코드 리팩토링**: `sidepanel.js`와 `background.js` 간 중복된 `showNotification` 함수를 통합하고, 불필요한 `tabs.onUpdated` 리스너를 제거하여 코드 효율성을 개선했습니다.
+- 📱 **설정 창 분리**: 팝업을 별도 창으로 분리하여 더 나은 설정 경험
+- 🔧 **권한 최적화**: 최소 권한 원칙에 따른 permission 재구성
+- ⚡ **성능 최적화**: Content Script 코드 라인 2000+ → 300+로 대폭 축소
+- 🛠️ **개발자 경험**: 체계적인 모듈화와 유지보수성 향상
+- ⌨️ **키보드 네비게이션**: 모든 모달에서 ESC/Enter/방향키 지원으로 접근성 향상
+- 🐛 **버그 수정**: 이중 이벤트 리스너 문제 해결, 자동 새로고침 기능 추가
+- 📁 **프로젝트 정리**: 불필요한 파일 제거 및 .gitignore 설정으로 깔끔한 구조
 
 ### v1.3 (2025-07-31) 🎉 **Chrome 웹스토어 정식 게시**
 - 🎯 **Chrome 웹스토어 정식 게시**: 심사 통과 및 공개 배포 시작
