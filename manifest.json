@@ -40,13 +40,13 @@
   "commands": {
     "toggle-side-panel": {
       "suggested_key": {
-        "default": "Ctrl+Alt+M"
+        "default": "Alt+1"
       },
       "description": "사이드 패널 토글"
     },
     "add-current-place": {
       "suggested_key": {
-        "default": "Ctrl+Alt+A"
+        "default": "Alt+2"
       },
       "description": "현재 장소 추가"
     }
