@@ -64,14 +64,12 @@
 ### 1️⃣ 지도 서비스 접속
 툴바의 CustomPlaceDB 아이콘을 클릭하여 설정 창에서 네이버지도, 카카오맵 중 선택
 
-### 2️⃣ Side Panel 열기 (3가지 방법)
+### 2️⃣ Side Panel 열기
 - **툴바 아이콘 클릭**: CustomPlaceDB 아이콘을 한 번 클릭하면 Side Panel이 열림
-- **키보드 단축키**: `Ctrl+Alt+M`으로 Side Panel 토글
 - **우클릭 메뉴**: 지도 페이지에서 우클릭 → '현재 장소 저장하기'
 
-### 3️⃣ 장소 선택 및 저장 (2가지 방법)
+### 3️⃣ 장소 선택 및 저장
 - **Side Panel 버튼**: 지도에서 장소를 선택한 후 Side Panel에서 '현재 보고 있는 장소 추가' 클릭
-- **키보드 단축키**: `Ctrl+Alt+A`로 현재 보고 있는 장소 즉시 저장
 → 장소명, 카테고리, 별점이 자동으로 저장됩니다
 
 ### 4️⃣ 목록 관리
@@ -84,8 +82,6 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
 
 ### 6️⃣ 데이터 백업 및 설정
 툴바 아이콘을 클릭하여 설정 창에서 '데이터 내보내기'로 JSON/CSV 백업 및 다른 기기에서 복원
-
-
 
 ## 🎯 활용 사례
 
@@ -129,7 +125,6 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
 - **Chrome Storage API** - 로컬 데이터 저장
 - **Chrome Notifications API** - 시스템 알림
 - **Chrome Context Menus API** - 우클릭 메뉴
-- **Chrome Commands API** - 키보드 단축키
 - **Chrome Tabs API** - 탭 관리
 
 ### Frontend
@@ -141,7 +136,7 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
 
 - **총 코드 라인**: 4,500+ 라인 (v2.0 업데이트 포함)
 - **지원 플랫폼**: 2개 (네이버지도, 카카오맵)
-- **Chrome API 활용**: 6개 (sidePanel, storage, notifications, contextMenus, commands, activeTab)
+- **Chrome API 활용**: 5개 (sidePanel, storage, notifications, contextMenus, activeTab)
 - **개발 기간**: 8일 (7/10 ~ 7/14 + 7/30 + 8/7)
 - **핵심 작업**
   - 단순 스크랩 → 커스텀 데이터베이스 시스템
