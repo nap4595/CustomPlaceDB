@@ -25,9 +25,6 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: true })
     .catch((error) => console.error(error));
-  
-  // 컨텍스트 메뉴 생성
-  createContextMenus();
 });
 
 // ==================== Side Panel 관리 ====================
@@ -71,42 +68,6 @@ async function savePlaceFromTab(tab) {
     return { success: false, error: error.message };
   }
 }
-
-
-// ==================== 컨텍스트 메뉴 관리 ====================
-function createContextMenus() {
-  chrome.contextMenus.create({
-    id: 'save-current-place',
-    title: '현재 장소 저장하기',
-    contexts: ['page'],
-    documentUrlPatterns: [
-      'https://map.naver.com/*',
-      'https://map.kakao.com/*',
-      'https://place.map.kakao.com/*'
-    ]
-  });
-  
-  chrome.contextMenus.create({
-    id: 'open-settings',
-    title: '설정 열기',
-    contexts: ['action']
-  });
-}
-
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === 'save-current-place') {
-    await savePlaceFromTab(tab);
-  } else if (info.menuItemId === 'open-settings') {
-    // 설정 창 열기
-    chrome.windows.create({
-      url: chrome.runtime.getURL('popup.html'),
-      type: 'popup',
-      width: 350,
-      height: 600,
-      focused: true
-    });
-  }
-});
 
 // ==================== 알림 관리 ====================
 function showNotification(message, type = 'info') {

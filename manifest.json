@@ -7,8 +7,7 @@
     "storage",
     "activeTab",
     "sidePanel",
-    "notifications",
-    "contextMenus"
+    "notifications"
   ],
   "host_permissions": [
     "https://map.naver.com/*",
