@@ -12,7 +12,6 @@
 
 ### 🆕 Chrome Side Panel API (v2.0)
 - **네이티브 사이드 패널**: Chrome 공식 Side Panel API 사용으로 안정성과 성능 향상
-- **우클릭 메뉴**: 컨텍스트 메뉴로 빠른 장소 저장
 - **시스템 알림**: Chrome 알림 API로 작업 완료 알림
 - **원클릭 접근**: 툴바 아이콘 클릭으로 즉시 패널 열기/닫기
 
@@ -73,7 +72,6 @@
 
 ### 2️⃣ Side Panel 열기
 - **툴바 아이콘 클릭**: CustomPlaceDB 아이콘을 한 번 클릭하면 Side Panel이 열림
-- **우클릭 메뉴**: 지도 페이지에서 우클릭 → '현재 장소 저장하기'
 
 ### 3️⃣ 장소 선택 및 저장
 - **Side Panel 버튼**: 지도에서 장소를 선택한 후 Side Panel에서 '현재 보고 있는 장소 추가' 클릭
@@ -131,7 +129,6 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
 ### Chrome APIs
 - **Chrome Storage API** - 로컬 데이터 저장
 - **Chrome Notifications API** - 시스템 알림
-- **Chrome Context Menus API** - 우클릭 메뉴
 - **Chrome Tabs API** - 탭 관리
 
 ### Frontend
@@ -144,7 +141,7 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
 
 - **총 코드 라인**: 4,500+ 라인 (v2.0 업데이트 포함)
 - **지원 플랫폼**: 2개 (네이버지도, 카카오맵)
-- **Chrome API 활용**: 5개 (sidePanel, storage, notifications, contextMenus, activeTab)
+- **Chrome API 활용**: 4개 (sidePanel, storage, notifications, activeTab)
 - **개발 기간**: 8일 (7/10 ~ 7/14 + 7/30 + 8/7)
 - **핵심 작업**
   - 단순 스크랩 → 커스텀 데이터베이스 시스템
@@ -165,7 +162,6 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
   - 네이티브 브라우저 Side Panel로 안정성과 성능 대폭 향상
   - 툴바 아이콘 클릭으로 패널 열기/닫기 원터치 지원
   - 브라우저 창 크기에 관계없이 일정한 패널 영역 확보
-- 🖱️ **우클릭 컨텍스트 메뉴**: 지도 페이지에서 우클릭으로 빠른 장소 저장
 - 🗑️ **단축키 기능 제거**: 사용성이 낮고 다른 기능과 충돌 가능성이 있는 키보드 단축키 관련 코드를 모두 제거하여 기능을 단순화했습니다.
 - 🔔 **시스템 알림**: Chrome Notifications API로 작업 완료 피드백
 - 🎨 **커스텀 테마 시스템**: 5가지 기본 테마 + 사용자 정의 테마 생성 기능

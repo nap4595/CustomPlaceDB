@@ -7,13 +7,13 @@
     "storage",
     "activeTab",
     "sidePanel",
-    "notifications",
-    "contextMenus"
+    "notifications"
   ],
   "host_permissions": [
     "https://map.naver.com/*",
     "https://pcmap.place.naver.com/*",
-    "https://map.kakao.com/*"
+    "https://map.kakao.com/*",
+    "https://place.map.kakao.com/*"
   ],
   "content_scripts": [
     {
