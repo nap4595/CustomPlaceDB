@@ -134,7 +134,6 @@ Side Panel에서 '새 목록 생성' 또는 기존 목록 선택하여 체계적
 ### Frontend
 - **DOM Manipulation** - 실시간 데이터 추출
 - **CSS3** - 반응형 UI 디자인
-<<<<<<< HEAD
 - **Event Delegation** - 효율적인 이벤트 처리
 
 ## 📊 프로젝트 통계
